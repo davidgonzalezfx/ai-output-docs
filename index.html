@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report Archive Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,300&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    /* ── Reset ─────────────────────────────────────────── */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    /* ── Custom Properties ──────────────────────────────── */
+    :root {
+      --bg:         #0a0a0f;
+      --surface:    #12121a;
+      --surface2:   #1a1a26;
+      --border:     #2a2a3e;
+      --accent:     #7c3aed;
+      --accent2:    #06b6d4;
+      --accent3:    #f59e0b;
+      --accent4:    #10b981;
+      --text:       #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim:   #64748b;
+      --code-bg:    #0d0d18;
+      --red:        #ef4444;
+      --pink:       #ec4899;
+    }
+
+    /* ── Base ───────────────────────────────────────────── */
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Fraunces', serif;
+      font-weight: 300;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+    p { margin-bottom: 1rem; color: var(--text-muted); }
+    p strong { color: var(--text); font-weight: 700; }
+    svg text { font-family: 'Space Mono', monospace; }
+
+    /* ── Scrollbar ──────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Hero ───────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 4rem 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 50%, rgba(124,58,237,0.15) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 80% 30%, rgba(6,182,212,0.1)   0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 60% 80%, rgba(245,158,11,0.08) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(124,58,237,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,58,237,0.06) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 80%);
+    }
+    .hero-content {
+      position: relative;
+      max-width: 900px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* ── Badge ──────────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--accent2);
+      border: 1px solid rgba(6,182,212,0.3);
+      padding: 0.3rem 0.8rem;
+      border-radius: 2px;
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    /* ── H1 ─────────────────────────────────────────────── */
+    .hero h1 {
+      font-size: clamp(3rem, 8vw, 7rem);
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.02em;
+    }
+    .hero h1 .line1 { color: var(--text); }
+    .hero h1 .line2 {
+      color: transparent;
+      -webkit-text-stroke: 1px var(--accent);
+      display: block;
+    }
+    .hero h1 .line3 {
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: block;
+    }
+
+    /* ── Hero desc ──────────────────────────────────────── */
+    .hero-desc {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      font-style: italic;
+      margin-bottom: 2.5rem;
+    }
+
+    /* ── TOC Grid ───────────────────────────────────────── */
+    .toc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+      max-width: 900px;
+    }
+    .toc-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.6rem 1rem;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      text-decoration: none;
+      color: var(--text-muted);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.72rem;
+      transition: all 0.2s;
+      letter-spacing: 0.05em;
+    }
+    .toc-item:hover {
+      background: rgba(124,58,237,0.1);
+      border-color: var(--accent);
+      color: var(--text);
+    }
+    .toc-num { color: var(--accent); font-weight: 700; flex-shrink: 0; }
+
+    /* ── Main ───────────────────────────────────────────── */
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* ── Section ────────────────────────────────────────── */
+    .section {
+      margin-bottom: 6rem;
+      scroll-margin-top: 2rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-num {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--accent);
+      opacity: 0.7;
+      letter-spacing: 0.1em;
+      white-space: nowrap;
+    }
+    .section h2 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    /* ── Reports grid ───────────────────────────────────── */
+    .reports-grid {
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    }
+    .reports-grid .toc-item {
+      font-size: 0.75rem;
+      padding: 0.8rem 1.1rem;
+    }
+
+    /* ── Empty state ────────────────────────────────────── */
+    .empty-state {
+      grid-column: 1 / -1;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+      padding: 2rem 0;
+    }
+
+    /* ── Footer ─────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-dim);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="hero">
+    <div class="hero-grid"></div>
+    <div class="hero-content">
+      <span class="badge">REPORTS · INDEX · 2026</span>
+      <h1>
+        <span class="line1">Report</span>
+        <span class="line2">Archive</span>
+        <span class="line3">Explorer</span>
+      </h1>
+      <p class="hero-desc"><em>A browsable index of all generated reports in this repository.</em></p>
+      <div class="toc-grid">
+        <a href="#reports" class="toc-item">
+          <span class="toc-num">01</span>Reports
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <section class="section" id="reports">
+      <div class="section-header">
+        <span class="section-num">// 01</span>
+        <h2>Reports</h2>
+      </div>
+      <div class="toc-grid reports-grid">
+        <!-- REPORT_ITEMS_START -->
+        <span class="empty-state">NO REPORTS FOUND · ADD HTML FILES TO THE REPO ROOT</span>
+        <!-- REPORT_ITEMS_END -->
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Report Archive Explorer · Built with Claude · March 2026</p>
+    <p style="margin-top:0.5rem;color:#1a1a26">report archive index github pages html file browser directory listing</p>
+  </footer>
+
+</body>
+</html>
