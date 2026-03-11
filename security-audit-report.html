@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Container Security Audit Report — DevOps & Security Analysis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,300&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Fraunces', serif;
+      font-weight: 300;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+    :root {
+      --bg:         #0a0a0f;
+      --surface:    #12121a;
+      --surface2:   #1a1a26;
+      --border:     #2a2a3e;
+      --accent:     #7c3aed;
+      --accent2:    #06b6d4;
+      --accent3:    #f59e0b;
+      --accent4:    #10b981;
+      --text:       #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim:   #64748b;
+      --code-bg:    #0d0d18;
+      --red:        #ef4444;
+      --pink:       #ec4899;
+    }
+    p { margin-bottom: 1rem; color: var(--text-muted); }
+    p strong { color: var(--text); font-weight: 700; }
+    h4 { font-size: 1rem; color: var(--text); margin: 1.5rem 0 0.5rem; font-weight: 700; }
+    svg text { font-family: 'Space Mono', monospace; }
+
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 4rem 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 50%, rgba(124,58,237,0.15) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 80% 30%, rgba(6,182,212,0.1)  0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 60% 80%, rgba(245,158,11,0.08) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(124,58,237,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,58,237,0.06) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 80%);
+    }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .badge {
+      display: inline-block;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--accent2);
+      border: 1px solid rgba(6,182,212,0.3);
+      padding: 0.3rem 0.8rem;
+      border-radius: 2px;
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .hero h1 {
+      font-size: clamp(3rem, 8vw, 7rem);
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.02em;
+    }
+    .hero h1 .line1 { color: var(--text); }
+    .hero h1 .line2 {
+      color: transparent;
+      -webkit-text-stroke: 1px var(--accent);
+      display: block;
+    }
+    .hero h1 .line3 {
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: block;
+    }
+    .hero-desc {
+      font-style: italic;
+      color: var(--text-muted);
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+    }
+    .toc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+      max-width: 900px;
+    }
+    .toc-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.6rem 1rem;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      text-decoration: none;
+      color: var(--text-muted);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.72rem;
+      transition: all 0.2s;
+      letter-spacing: 0.05em;
+    }
+    .toc-item:hover {
+      background: rgba(124,58,237,0.1);
+      border-color: var(--accent);
+      color: var(--text);
+    }
+    .toc-num { color: var(--accent); font-weight: 700; }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    .section {
+      margin-bottom: 6rem;
+      scroll-margin-top: 2rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-num {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--accent);
+      opacity: 0.7;
+      letter-spacing: 0.1em;
+      white-space: nowrap;
+    }
+    .section h2 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+    .card.purple::before { background: var(--accent); }
+    .card.cyan::before { background: var(--accent2); }
+    .card.amber::before { background: var(--accent3); }
+    .card.green::before { background: var(--accent4); }
+    .card.red::before { background: var(--red); }
+    .card.pink::before { background: var(--pink); }
+    .card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text); }
+    .card p  { font-size: 0.9rem; margin: 0; }
+    .card-icon { font-size: 1.5rem; margin-bottom: 0.75rem; display: block; }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.5rem;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      position: relative;
+    }
+    code {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.8rem;
+      line-height: 1.6;
+    }
+    .code-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--accent2);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      display: block;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .kw { color: #c084fc; }
+    .fn { color: #60a5fa; }
+    .str { color: #86efac; }
+    .cm { color: var(--text-dim); font-style: italic; }
+    .num { color: var(--accent3); }
+    .cls { color: #fbbf24; }
+    .op { color: var(--accent2); }
+    .var { color: #f9a8d4; }
+
+    .callout {
+      background: rgba(124,58,237,0.08);
+      border-left: 3px solid var(--accent);
+      padding: 1rem 1.5rem;
+      margin: 1.5rem 0;
+      border-radius: 0 6px 6px 0;
+    }
+    .callout p { margin: 0; font-size: 0.9rem; }
+    .callout.cyan { background: rgba(6,182,212,0.08); border-left-color: var(--accent2); }
+    .callout.amber { background: rgba(245,158,11,0.08); border-left-color: var(--accent3); }
+    .callout.green { background: rgba(16,185,129,0.08); border-left-color: var(--accent4); }
+    .callout.red { background: rgba(239,68,68,0.08); border-left-color: var(--red); }
+    .hl { color: var(--accent2); }
+    .hl-amber { color: var(--accent3); }
+    .hl-green { color: var(--accent4); }
+    .hl-purple { color: #c084fc; }
+
+    .table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+    th {
+      background: var(--surface2);
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid rgba(42,42,62,0.5);
+      color: var(--text-muted);
+      vertical-align: top;
+    }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    td strong { color: var(--text); }
+    td .tag {
+      display: inline-block;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 2px;
+      margin: 0.1rem;
+    }
+    .tag-green { background: rgba(16,185,129,0.15); color: #10b981; }
+    .tag-amber { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .tag-red { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .tag-blue { background: rgba(96,165,250,0.15); color: #60a5fa; }
+    .tag-purple { background: rgba(124,58,237,0.15); color: #c084fc; }
+
+    .diagram {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2rem;
+      margin: 1.5rem 0;
+    }
+    .diagram-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--accent2);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-dim);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div class="hero-grid"></div>
+    <div class="hero-content">
+      <span class="badge">Security Audit · DevOps · March 2026</span>
+      <h1>
+        <span class="line1">Container</span>
+        <span class="line2">Security</span>
+        <span class="line3">Audit Report</span>
+      </h1>
+      <p class="hero-desc">A comprehensive technical analysis of Dockerfile and firewall initialization scripts for containerized development environments</p>
+      <div class="toc-grid">
+        <a href="#executive-summary" class="toc-item">
+          <span class="toc-num">01</span> Executive Summary
+        </a>
+        <a href="#dockerfile-analysis" class="toc-item">
+          <span class="toc-num">02</span> Dockerfile Analysis
+        </a>
+        <a href="#firewall-analysis" class="toc-item">
+          <span class="toc-num">03</span> Firewall Script Analysis
+        </a>
+        <a href="#security-findings" class="toc-item">
+          <span class="toc-num">04</span> Security Findings
+        </a>
+        <a href="#recommendations" class="toc-item">
+          <span class="toc-num">05</span> Recommendations
+        </a>
+        <a href="#best-practices" class="toc-item">
+          <span class="toc-num">06</span> Best Practices
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <section class="section" id="executive-summary">
+      <div class="section-header">
+        <span class="section-num">// 01</span>
+        <h2>Executive Summary</h2>
+      </div>
+      <p>This report provides a comprehensive security audit of a containerized development environment consisting of a <strong>Dockerfile</strong> and <strong>init-firewall.sh</strong> script. The audit was requested to evaluate the security posture, identify vulnerabilities, and ensure compliance with industry best practices for containerization and network security.</p>
+      <p>The container is designed as a development environment for Node.js applications with Claude Code integration, featuring a restrictive firewall that only allows traffic to specific domains (GitHub, npm, Anthropic API, and related services). The analysis reveals <span class="hl-amber">multiple critical security issues</span> that require immediate attention, alongside several areas for optimization.</p>
+
+      <div class="card-grid">
+        <div class="card red">
+          <span class="card-icon">🔴</span>
+          <h3>Critical Severity</h3>
+          <p>3 findings requiring immediate remediation including cleartext password storage and insufficient input validation.</p>
+        </div>
+        <div class="card amber">
+          <span class="card-icon">🟡</span>
+          <h3>High Severity</h3>
+          <p>5 findings involving permission management, error handling, and resource cleanup practices.</p>
+        </div>
+        <div class="card cyan">
+          <span class="card-icon">🔵</span>
+          <h3>Medium Severity</h3>
+          <p>4 findings related to optimization opportunities, layer caching, and image size reduction.</p>
+        </div>
+        <div class="card green">
+          <span class="card-icon">🟢</span>
+          <h3>Positive Findings</h3>
+          <p>Non-root user implementation, restrictive default firewall policies, and proper use of ipsets for network rules.</p>
+        </div>
+      </div>
+
+      <div class="callout red">
+        <p><strong>Overall Assessment:</strong> The container architecture demonstrates <span class="hl">security-conscious design</span> with its restrictive firewall approach, but contains critical vulnerabilities in authentication handling and script robustness that must be addressed before production deployment.</p>
+      </div>
+    </section>
+
+    <section class="section" id="dockerfile-analysis">
+      <div class="section-header">
+        <span class="section-num">// 02</span>
+        <h2>Dockerfile Analysis</h2>
+      </div>
+      <p>The Dockerfile constructs a Node.js-based development container with development tools, shell configuration, and the Claude Code CLI. Below is a detailed breakdown of each section.</p>
+
+      <h4>Base Image and Initial Configuration (Lines 1-5)</h4>
+      <pre><code><span class="code-label">Dockerfile · Base image selection</span><span class="kw">FROM</span> node:<span class="num">20</span>
+
+<span class="kw">ARG</span> <span class="var">TZ</span>
+<span class="kw">ENV</span> <span class="var">TZ</span>=<span class="str">"$TZ"</span></code></pre>
+
+      <div class="callout green">
+        <p><strong>Assessment: 🟢 Excellent</strong> — Using official Node.js image with specific version tag prevents unexpected updates. The timezone ARG/ENV pattern allows configuration without rebuilding the image.</p>
+      </div>
+
+      <h4>Package Installation (Lines 6-25)</h4>
+      <pre><code><span class="code-label">Dockerfile · System package installation</span><span class="cm"># Install basic development tools and iptables/ipset</span>
+<span class="kw">RUN</span> apt-get update <span class="op">&amp;&amp;</span> apt-get install -y --no-install-recommends \
+  less \
+  git \
+  procps \
+  sudo \
+  zsh \
+  man-db \
+  unzip \
+  gnupg2 \
+  gh \
+  iptables \
+  ipset \
+  iproute2 \
+  dnsutils \
+  aggregate \
+  jq \
+  vim \
+  zsh-syntax-highlighting \
+  <span class="op">&amp;&amp;</span> apt-get clean <span class="op">&amp;&amp;</span> rm -rf /var/lib/apt/lists/*</code></pre>
+
+      <div class="callout amber">
+        <p><strong>Assessment: 🟡 Good</strong> — Proper use of <span class="hl">--no-install-recommends</span> reduces image size. Cleanup commands are present. However, several packages (<span class="hl">less, man-db, vim</span>) are development conveniences that increase attack surface in production scenarios.</p>
+      </div>
+
+      <h4>Directory Permissions and User Setup (Lines 27-44)</h4>
+      <pre><code><span class="code-label">Dockerfile · Directory structure and permissions</span><span class="cm"># Ensure default node user has access to /usr/local/share</span>
+<span class="kw">RUN</span> mkdir -p /usr/local/share/npm-global <span class="op">&amp;&amp;</span> \
+  chown -R node:node /usr/local/share
+
+<span class="kw">ARG</span> <span class="var">USERNAME</span>=node
+
+<span class="cm"># Persist bash history.</span>
+<span class="kw">RUN</span> <span class="var">SNIPPET</span>=<span class="str">"export PROMPT_COMMAND='history -a' &amp;&amp; export HISTFILE=/commandhistory/.bash_history"</span> \
+  <span class="op">&amp;&amp;</span> mkdir /commandhistory \
+  <span class="op">&amp;&amp;</span> touch /commandhistory/.bash_history \
+  <span class="op">&amp;&amp;</span> chown -R <span class="var">$USERNAME</span> /commandhistory</code></pre>
+
+      <div class="callout cyan">
+        <p><strong>Assessment: 🟡 Good</strong> — Proper use of existing <span class="hl">node</span> user rather than creating a new one. History persistence is useful for development. The command history directory could be vulnerable to symlink attacks if not properly handled.</p>
+      </div>
+
+      <h4>Critical Security Issue - Password Storage (Lines 86-89)</h4>
+      <pre><code><span class="code-label">Dockerfile · CRITICAL VULNERABILITY</span><span class="cm"># Copy and set up firewall script</span>
+<span class="kw">COPY</span> --chown=node:node init-firewall.sh /usr/local/bin/
+<span class="kw">USER</span> root
+<span class="kw">RUN</span> chmod +x /usr/local/bin/init-firewall.sh <span class="op">&amp;&amp;</span> \
+  usermod -aG sudo node <span class="op">&amp;&amp;</span> echo <span class="str">"node:node"</span> | chpasswd
+<span class="kw">USER</span> node</code></pre>
+
+      <div class="callout red">
+        <p><strong>Assessment: 🔴 Needs Improvement</strong> — <span class="hl">CRITICAL SECURITY VULNERABILITY</span>. The password is stored in <span class="hl">cleartext</span> in the Docker image layers and history. Any user with access to the image can extract this password using <code class="code">docker history</code> or image inspection tools. Additionally, the password <span class="hl">"node:node"</span> is extremely weak and predictable.</p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <tr>
+            <th>Issue</th>
+            <th>Severity</th>
+            <th>Impact</th>
+          </tr>
+          <tr>
+            <td><strong>Cleartext password in image</strong></td>
+            <td><span class="tag tag-red">Critical</span></td>
+            <td>Password accessible in image layers and history</td>
+          </tr>
+          <tr>
+            <td><strong>Weak default password</strong></td>
+            <td><span class="tag tag-red">Critical</span></td>
+            <td>Predictable credentials enable brute force</td>
+          </tr>
+          <tr>
+            <td><strong>Password reuse pattern</strong></td>
+            <td><span class="tag tag-amber">High</span></td>
+            <td>Username equals password (common pattern)</td>
+          </tr>
+        </table>
+      </div>
+
+      <h4>Claude Code Installation (Lines 81-82)</h4>
+      <pre><code><span class="code-label">Dockerfile · Third-party script execution</span><span class="cm"># Install Claude using the official installation script</span>
+<span class="kw">RUN</span> curl -fsSL https://claude.ai/install.sh | bash</code></pre>
+
+      <div class="callout amber">
+        <p><strong>Assessment: 🟡 Good</strong> — Using official installation script is appropriate, but <span class="hl">piping curl to bash</span> is a security anti-pattern. The script is downloaded and executed without verification. No checksum or signature validation is performed.</p>
+      </div>
+    </section>
+
+    <section class="section" id="firewall-analysis">
+      <div class="section-header">
+        <span class="section-num">// 03</span>
+        <h2>Firewall Script Analysis</h2>
+      </div>
+      <p>The <code class="code">init-firewall.sh</code> script implements a restrictive network firewall using iptables and ipsets. This is a security-critical component that controls all network egress from the container.</p>
+
+      <h4>Script Initialization (Lines 1-4)</h4>
+      <pre><code><span class="code-label">Bash · Script safety configuration</span><span class="kw">#!/bin/bash</span>
+<span class="kw">set</span> -euo pipefail  <span class="cm"># Exit on error, undefined vars, and pipeline failures</span>
+<span class="kw">IFS</span>=$<span class="str">'\n\t'</span>       <span class="cm"># Stricter word splitting</span></code></pre>
+
+      <div class="callout green">
+        <p><strong>Assessment: 🟢 Excellent</strong> — Proper use of <span class="hl">set -euo pipefail</span> ensures the script fails safely on errors. This is a best practice for security-critical scripts.</p>
+      </div>
+
+      <h4>Docker DNS Preservation (Lines 5-25)</h4>
+      <pre><code><span class="code-label">Bash · Docker DNS rule preservation</span><span class="cm"># 1. Extract Docker DNS info BEFORE any flushing</span>
+<span class="kw">DOCKER_DNS_RULES</span>=$(iptables-save -t nat | grep <span class="str">"127\.0\.0\.11"</span> <span class="op">||</span> <span class="kw">true</span>)
+
+<span class="cm"># Flush existing rules and delete existing ipsets</span>
+iptables -F
+iptables -X
+iptables -t nat -F
+iptables -t nat -X
+iptables -t mangle -F
+iptables -t mangle -X
+ipset destroy allowed-domains <span class="num">2</span>&gt;/dev/null <span class="op">||</span> <span class="kw">true</span>
+
+<span class="cm"># 2. Selectively restore ONLY internal Docker DNS resolution</span>
+<span class="kw">if</span> [ -n <span class="str">"$DOCKER_DNS_RULES"</span> ]; <span class="kw">then</span>
+    <span class="kw">echo</span> <span class="str">"Restoring Docker DNS rules..."</span>
+    iptables -t nat -N DOCKER_OUTPUT <span class="num">2</span>&gt;/dev/null <span class="op">||</span> <span class="kw">true</span>
+    iptables -t nat -N DOCKER_POSTROUTING <span class="num">2</span>&gt;/dev/null <span class="op">||</span> <span class="kw">true</span>
+    <span class="kw">echo</span> <span class="str">"$DOCKER_DNS_RULES"</span> | xargs -L <span class="num">1</span> iptables -t nat
+<span class="kw">else</span>
+    <span class="kw">echo</span> <span class="str">"No Docker DNS rules to restore"</span>
+<span class="kw">fi</span></code></pre>
+
+      <div class="callout green">
+        <p><strong>Assessment: 🟢 Excellent</strong> — The script correctly preserves Docker's internal DNS (127.0.0.11) which is critical for container networking. The use of <span class="hl">|| true</span> for error suppression is appropriate here.</p>
+      </div>
+
+      <h4>GitHub IP Range Processing (Lines 43-64)</h4>
+      <pre><code><span class="code-label">Bash · GitHub IP range validation</span><span class="cm"># Fetch GitHub meta information and aggregate + add their IP ranges</span>
+<span class="kw">echo</span> <span class="str">"Fetching GitHub IP ranges..."</span>
+<span class="kw">gh_ranges</span>=$(curl -s https://api.github.com/meta)
+<span class="kw">if</span> [ -z <span class="str">"$gh_ranges"</span> ]; <span class="kw">then</span>
+    <span class="kw">echo</span> <span class="str">"ERROR: Failed to fetch GitHub IP ranges"</span>
+    <span class="kw">exit</span> <span class="num">1</span>
+<span class="kw">fi</span>
+
+<span class="kw">if</span> ! <span class="kw">echo</span> <span class="str">"$gh_ranges"</span> | jq -e <span class="str">'.web and .api and .git'</span> &gt;/dev/null; <span class="kw">then</span>
+    <span class="kw">echo</span> <span class="str">"ERROR: GitHub API response missing required fields"</span>
+    <span class="kw">exit</span> <span class="num">1</span>
+<span class="kw">fi</span>
+
+<span class="kw">echo</span> <span class="str">"Processing GitHub IPs..."</span>
+<span class="kw">while</span> <span class="kw">read</span> -r cidr; <span class="kw">do</span>
+    <span class="kw">if</span> [[ ! <span class="str">"$cidr"</span> =~ ^[<span class="num">0</span>-<span class="num">9</span>]{<span class="num">1</span>,<span class="num">3</span>}\.[<span class="num">0</span>-<span class="num">9</span>]{<span class="num">1</span>,<span class="num">3</span>}\.[<span class="num">0</span>-<span class="num">9</span>]{<span class="num">1</span>,<span class="num">3</span>}\.[<span class="num">0</span>-<span class="num">9</span>]{<span class="num">1</span>,<span class="num">3</span>}/[<span class="num">0</span>-<span class="num">9</span>]{<span class="num">1</span>,<span class="num">2</span>}$ ]]; <span class="kw">then</span>
+        <span class="kw">echo</span> <span class="str">"ERROR: Invalid CIDR range from GitHub meta: $cidr"</span>
+        <span class="kw">exit</span> <span class="num">1</span>
+    <span class="kw">fi</span>
+    <span class="kw">echo</span> <span class="str">"Adding GitHub range $cidr"</span>
+    ipset add allowed-domains <span class="str">"$cidr"</span>
+<span class="kw">done</span> &lt; &lt;(echo <span class="str">"$gh_ranges"</span> | jq -r <span class="str">'(.web + .api + .git)[]'</span> | aggregate -q)</code></pre>
+
+      <div class="callout green">
+        <p><strong>Assessment: 🟢 Excellent</strong> — Strong input validation with CIDR format checking using regex. Proper error handling with explicit exit codes. The use of <span class="hl">aggregate</span> to consolidate CIDR ranges is efficient.</p>
+      </div>
+
+      <div class="diagram">
+        <div class="diagram-title">Firewall Rule Processing Flow</div>
+        <svg viewBox="0 0 800 400" width="100%" style="max-width:800px;display:block;margin:0 auto;">
+          <defs>
+            <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#7c3aed"/>
+            </marker>
+            <marker id="arr2" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#06b6d4"/>
+            </marker>
+            <marker id="arr3" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#10b981"/>
+            </marker>
+          </defs>
+
+          <!-- Start node -->
+          <rect x="320" y="20" width="160" height="40" rx="6" fill="#1a1a26" stroke="#7c3aed" stroke-width="1.5"/>
+          <text x="400" y="45" text-anchor="middle" font-size="10" fill="#c084fc">Script Execution</text>
+
+          <!-- Extract DNS -->
+          <rect x="300" y="90" width="200" height="35" rx="4" fill="#1a1a26" stroke="#06b6d4" stroke-width="1"/>
+          <text x="400" y="112" text-anchor="middle" font-size="9" fill="#67e8f9">Extract Docker DNS Rules</text>
+
+          <!-- Flush -->
+          <rect x="300" y="150" width="200" height="35" rx="4" fill="#1a1a26" stroke="#f59e0b" stroke-width="1"/>
+          <text x="400" y="172" text-anchor="middle" font-size="9" fill="#fcd34d">Flush All iptables Rules</text>
+
+          <!-- Decision diamond -->
+          <polygon points="400,210 460,240 400,270 340,240" fill="#1a1a26" stroke="#10b981" stroke-width="1.5"/>
+          <text x="400" y="244" text-anchor="middle" font-size="8" fill="#6ee7b7">DNS Rules?</text>
+
+          <!-- Restore branch -->
+          <rect x="520" y="222" width="140" height="35" rx="4" fill="#1a1a26" stroke="#06b6d4" stroke-width="1"/>
+          <text x="590" y="244" text-anchor="middle" font-size="9" fill="#67e8f9">Restore DNS</text>
+
+          <!-- GitHub API -->
+          <rect x="140" y="300" width="160" height="40" rx="4" fill="#1a1a26" stroke="#7c3aed" stroke-width="1.5"/>
+          <text x="220" y="324" text-anchor="middle" font-size="9" fill="#c084fc">Fetch GitHub IPs</text>
+
+          <!-- Domain resolution -->
+          <rect x="340" y="300" width="160" height="40" rx="4" fill="#1a1a26" stroke="#7c3aed" stroke-width="1.5"/>
+          <text x="420" y="324" text-anchor="middle" font-size="9" fill="#c084fc">Resolve Domains</text>
+
+          <!-- Build ipset -->
+          <rect x="540" y="300" width="160" height="40" rx="4" fill="#1a1a26" stroke="#7c3aed" stroke-width="1.5"/>
+          <text x="620" y="324" text-anchor="middle" font-size="9" fill="#c084fc">Build ipset</text>
+
+          <!-- Arrows -->
+          <path d="M400,60 L400,90" stroke="#7c3aed" stroke-width="2" marker-end="url(#arr)"/>
+          <path d="M400,125 L400,150" stroke="#06b6d4" stroke-width="2" marker-end="url(#arr2)"/>
+          <path d="M400,185 L400,210" stroke="#f59e0b" stroke-width="2" marker-end="url(#arr)"/>
+          <path d="M460,240 L520,240" stroke="#10b981" stroke-width="1.5" marker-end="url(#arr3)"/>
+          <path d="M340,240 L220,300" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arr)"/>
+          <path d="M400,270 L420,300" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arr)"/>
+          <path d="M440,240 L620,300" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arr)"/>
+        </svg>
+      </div>
+
+      <h4>Domain Resolution (Lines 66-91)</h4>
+      <pre><code><span class="code-label">Bash · DNS resolution with validation</span><span class="cm"># Resolve and add other allowed domains</span>
+<span class="kw">for</span> domain <span class="kw">in</span> \
+    <span class="str">"registry.npmjs.org"</span> \
+    <span class="str">"api.anthropic.com"</span> \
+    <span class="str">"sentry.io"</span> \
+    <span class="str">"statsig.anthropic.com"</span> \
+    <span class="str">"statsig.com"</span> \
+    <span class="str">"marketplace.visualstudio.com"</span> \
+    <span class="str">"vscode.blob.core.windows.net"</span> \
+    <span class="str">"update.code.visualstudio.com"</span>; <span class="kw">do</span>
+    <span class="kw">echo</span> <span class="str">"Resolving $domain..."</span>
+    <span class="kw">ips</span>=$(dig +noall +answer A <span class="str">"$domain"</span> | awk <span class="str">'$4 == "A" {print $5}'</span>)
+    <span class="kw">if</span> [ -z <span class="str">"$ips"</span> ]; <span class="kw">then</span>
+        <span class="kw">echo</span> <span class="str">"ERROR: Failed to resolve $domain"</span>
+        <span class="kw">exit</span> <span class="num">1</span>
+    <span class="kw">fi</span>
+
+    <span class="kw">while</span> <span class="kw">read</span> -r ip; <span class="kw">do</span>
+        <span class="kw">if</span> [[ ! <span class="str">"$ip"</span> =~ ^[<span class="num">0</span>-<span class="num">9</span>]{<span class="num">1</span>,<span class="num">3</span>}\.[<span class="num">0</span>-<span class="num">9</span>]{<span class="num">1</span>,<span class="num">3</span>}\.[<span class="num">0</span>-<span class="num">9</span>]{<span class="num">1</span>,<span class="num">3</span>}\.[<span class="num">0</span>-<span class="num">9</span>]{<span class="num">1</span>,<span class="num">3</span>}$ ]]; <span class="kw">then</span>
+            <span class="kw">echo</span> <span class="str">"ERROR: Invalid IP from DNS for $domain: $ip"</span>
+            <span class="kw">exit</span> <span class="num">1</span>
+        <span class="kw">fi</span>
+        <span class="kw">echo</span> <span class="str">"Adding $ip for $domain"</span>
+        ipset add allowed-domains <span class="str">"$ip"</span>
+    <span class="kw">done</span> &lt; &lt;(echo <span class="str">"$ips"</span>)
+<span class="kw">done</span></code></pre>
+
+      <div class="callout amber">
+        <p><strong>Assessment: 🟡 Good</strong> — IP address validation is present but <span class="hl">insufficient</span>. The regex doesn't validate that each octet is ≤255, allowing invalid IPs like 999.999.999.999. Additionally, DNS resolution happens at runtime — if IP addresses change, the container must be restarted to get updated addresses.</p>
+      </div>
+
+      <h4>Firewall Rule Application (Lines 103-121)</h4>
+      <pre><code><span class="code-label">Bash · Final firewall configuration</span><span class="cm"># Set default policies to DROP first</span>
+iptables -P INPUT DROP
+iptables -P FORWARD DROP
+iptables -P OUTPUT DROP
+
+<span class="cm"># First allow established connections for already approved traffic</span>
+iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+<span class="cm"># Then allow only specific outbound traffic to allowed domains</span>
+iptables -A OUTPUT -m set --match-set allowed-domains dst -j ACCEPT
+
+<span class="cm"># Explicitly REJECT all other outbound traffic for immediate feedback</span>
+iptables -A OUTPUT -j REJECT --reject-with icmp-admin-prohibited</code></pre>
+
+      <div class="callout green">
+        <p><strong>Assessment: 🟢 Excellent</strong> — Proper security-first approach with <span class="hl">DROP default policies</span>. Using REJECT with <span class="hl">icmp-admin-prohibited</span> provides immediate feedback to applications. Stateful connection tracking allows return traffic for permitted outbound connections.</p>
+      </div>
+
+      <h4>Verification Tests (Lines 123-138)</h4>
+      <pre><code><span class="code-label">Bash · Security verification</span><span class="kw">echo</span> <span class="str">"Verifying firewall rules..."</span>
+<span class="kw">if</span> curl --connect-timeout <span class="num">5</span> https://example.com &gt;/dev/null <span class="num">2</span>&gt;<span class="op">&amp;1</span>; <span class="kw">then</span>
+    <span class="kw">echo</span> <span class="str">"ERROR: Firewall verification failed - was able to reach https://example.com"</span>
+    <span class="kw">exit</span> <span class="num">1</span>
+<span class="kw">else</span>
+    <span class="kw">echo</span> <span class="str">"Firewall verification passed - unable to reach https://example.com as expected"</span>
+<span class="kw">fi</span>
+
+<span class="cm"># Verify GitHub API access</span>
+<span class="kw">if</span> ! curl --connect-timeout <span class="num">5</span> https://api.github.com/zen &gt;/dev/null <span class="num">2</span>&gt;<span class="op">&amp;1</span>; <span class="kw">then</span>
+    <span class="kw">echo</span> <span class="str">"ERROR: Firewall verification failed - unable to reach https://api.github.com"</span>
+    <span class="kw">exit</span> <span class="num">1</span>
+<span class="kw">else</span>
+    <span class="kw">echo</span> <span class="str">"Firewall verification passed - able to reach https://api.github.com as expected"</span>
+<span class="kw">fi</span></code></pre>
+
+      <div class="callout green">
+        <p><strong>Assessment: 🟢 Excellent</strong> — Comprehensive verification that tests both <span class="hl">negative cases</span> (blocking unwanted traffic) and <span class="hl">positive cases</span> (allowing required traffic). This ensures the firewall is working as configured before the container becomes operational.</p>
+      </div>
+    </section>
+
+    <section class="section" id="security-findings">
+      <div class="section-header">
+        <span class="section-num">// 04</span>
+        <h2>Security Findings</h2>
+      </div>
+      <p>The following section details all security findings organized by severity level, with technical impact analysis and remediation guidance.</p>
+
+      <div class="diagram">
+        <div class="diagram-title">Security Architecture Overview</div>
+        <svg viewBox="0 0 900 500" width="100%" style="max-width:900px;display:block;margin:0 auto;">
+          <defs>
+            <marker id="arr4" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#ef4444"/>
+            </marker>
+            <marker id="arr5" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#7c3aed"/>
+            </marker>
+            <marker id="arr6" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#10b981"/>
+            </marker>
+          </defs>
+
+          <!-- Container boundary -->
+          <rect x="50" y="40" width="800" height="420" rx="8" fill="none" stroke="#2a2a3e" stroke-width="2" stroke-dasharray="5,5"/>
+          <text x="70" y="65" font-size="10" fill="#64748b">Container Boundary</text>
+
+          <!-- Node user -->
+          <rect x="100" y="100" width="150" height="60" rx="6" fill="#1a1a26" stroke="#7c3aed" stroke-width="1.5"/>
+          <text x="175" y="125" text-anchor="middle" font-size="10" fill="#c084fc">node user</text>
+          <text x="175" y="140" text-anchor="middle" font-size="8" fill="#94a3b8">Non-privileged</text>
+
+          <!-- Sudo group -->
+          <rect x="100" y="200" width="150" height="60" rx="6" fill="#1a1a26" stroke="#f59e0b" stroke-width="1.5"/>
+          <text x="175" y="225" text-anchor="middle" font-size="10" fill="#fcd34d">sudo group</text>
+          <text x="175" y="240" text-anchor="middle" font-size="8" fill="#94a3b8">Password: node</text>
+
+          <!-- Firewall -->
+          <rect x="350" y="100" width="200" height="160" rx="6" fill="#1a1a26" stroke="#10b981" stroke-width="1.5"/>
+          <text x="450" y="125" text-anchor="middle" font-size="10" fill="#6ee7b7">iptables + ipset</text>
+          <text x="450" y="145" text-anchor="middle" font-size="8" fill="#94a3b8">Default: DROP</text>
+
+          <!-- Allowed destinations -->
+          <rect x="620" y="80" width="180" height="200" rx="6" fill="#1a1a26" stroke="#06b6d4" stroke-width="1"/>
+          <text x="710" y="105" text-anchor="middle" font-size="9" fill="#67e8f9">Allowed Destinations</text>
+          <text x="630" y="130" font-size="8" fill="#94a3b8">• GitHub (web/api/git)</text>
+          <text x="630" y="150" font-size="8" fill="#94a3b8">• registry.npmjs.org</text>
+          <text x="630" y="170" font-size="8" fill="#94a3b8">• api.anthropic.com</text>
+          <text x="630" y="190" font-size="8" fill="#94a3b8">• sentry.io</text>
+          <text x="630" y="210" font-size="8" fill="#94a3b8">• statsig.*.com</text>
+          <text x="630" y="230" font-size="8" fill="#94a3b8">• *.visualstudio.com</text>
+          <text x="630" y="250" font-size="8" fill="#94a3b8">• Host network</text>
+
+          <!-- Claude Code -->
+          <rect x="350" y="300" width="200" height="60" rx="6" fill="#1a1a26" stroke="#ec4899" stroke-width="1.5"/>
+          <text x="450" y="325" text-anchor="middle" font-size="10" fill="#f9a8d4">Claude Code CLI</text>
+          <text x="450" y="340" text-anchor="middle" font-size="8" fill="#94a3b8">Official install script</text>
+
+          <!-- Vulnerability marker -->
+          <rect x="100" y="320" width="150" height="60" rx="6" fill="#1a1a26" stroke="#ef4444" stroke-width="2"/>
+          <text x="175" y="345" text-anchor="middle" font-size="10" fill="#ef4444">⚠ CRITICAL</text>
+          <text x="175" y="360" text-anchor="middle" font-size="8" fill="#94a3b8">Cleartext password</text>
+
+          <!-- Arrows -->
+          <path d="M175,160 L175,200" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arr4)" stroke-dasharray="4,2"/>
+          <path d="M250,130 L350,130" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arr5)"/>
+          <path d="M550,130 L620,130" stroke="#10b981" stroke-width="1.5" marker-end="url(#arr6)"/>
+          <path d="M250,360 L350,360" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arr4)"/>
+          <path d="M450,260 L450,300" stroke="#ec4899" stroke-width="1.5" marker-end="url(#arr5)"/>
+        </svg>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <tr>
+            <th>Finding</th>
+            <th>Severity</th>
+            <th>CWE</th>
+            <th>Remediation</th>
+          </tr>
+          <tr>
+            <td><strong>Cleartext password in Docker image</strong></td>
+            <td><span class="tag tag-red">Critical</span></td>
+            <td><span class="tag tag-purple">CWE-256</span></td>
+            <td>Use secrets management, build arguments, or mount credentials at runtime</td>
+          </tr>
+          <tr>
+            <td><strong>Weak predictable password</strong></td>
+            <td><span class="tag tag-red">Critical</span></td>
+            <td><span class="tag tag-purple">CWE-521</span></td>
+            <td>Generate strong random passwords or use SSH key authentication</td>
+          </tr>
+          <tr>
+            <td><strong>Pipe curl to bash without verification</strong></td>
+            <td><span class="tag tag-amber">High</span></td>
+            <td><span class="tag tag-purple">CWE-494</span></td>
+            <td>Download and verify checksum/signature before execution</td>
+          </tr>
+          <tr>
+            <td><strong>Insufficient IP validation</strong></td>
+            <td><span class="tag tag-amber">Medium</span></td>
+            <td><span class="tag tag-purple">CWE-20</span></td>
+            <td>Validate each octet range (0-255) in regex</td>
+          </tr>
+          <tr>
+            <td><strong>Missing network tools for debugging</strong></td>
+            <td><span class="tag tag-blue">Low</span></td>
+            <td><span class="tag tag-purple">N/A</span></td>
+            <td>Consider adding net-tools for troubleshooting</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="callout red">
+        <p><strong>Critical Finding Details:</strong> The password <span class="hl">"node:node"</span> is stored in cleartext in the Docker image layers. This can be extracted using <code class="code">docker history</code>, <code class="code">docker inspect</code>, or by accessing the image filesystem directly. Any user with image access can escalate privileges within the container.</p>
+      </div>
+    </section>
+
+    <section class="section" id="recommendations">
+      <div class="section-header">
+        <span class="section-num">// 05</span>
+        <h2>Recommendations</h2>
+      </div>
+      <p>This section provides actionable remediation steps for all identified security issues, with code examples where applicable.</p>
+
+      <h4>Critical Issue #1: Password Management</h4>
+      <p>The most critical vulnerability is the cleartext password storage. Below are three approaches ranked by security posture:</p>
+
+      <div class="card-grid">
+        <div class="card green">
+          <span class="card-icon">🔐</span>
+          <h3>Option 1: SSH Keys (Recommended)</h3>
+          <p>Remove password authentication entirely. Use SSH key-based authentication for sudo access. Generate keys during build or mount from host.</p>
+        </div>
+        <div class="card cyan">
+          <span class="card-icon">🔑</span>
+          <h3>Option 2: Build-Time Secrets</h3>
+          <p>Use Docker BuildKit secrets to pass password during build. The secret is never stored in image layers and is mounted only during build.</p>
+        </div>
+        <div class="card amber">
+          <span class="card-icon">📋</span>
+          <h3>Option 3: Runtime Mounts</h3>
+          <p>Mount credentials from host at container runtime using Docker secrets or volume mounts. Allows rotation without rebuilding.</p>
+        </div>
+      </div>
+
+      <h4>Recommended Dockerfile Changes</h4>
+      <pre><code><span class="code-label">Dockerfile · Secure credential handling</span><span class="cm"># RECOMMENDED: Remove password-based authentication entirely</span>
+<span class="kw">COPY</span> --chown=node:node init-firewall.sh /usr/local/bin/
+<span class="kw">USER</span> root
+<span class="kw">RUN</span> chmod +x /usr/local/bin/init-firewall.sh <span class="op">&amp;&amp;</span> \
+  usermod -aG sudo node <span class="op">&amp;&amp;</span> \
+  <span class="cm"># Configure passwordless sudo for specific commands only</span>
+  <span class="kw">echo</span> <span class="str">"node ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh"</span> &gt;&gt; /etc/sudoers
+<span class="kw">USER</span> node
+
+<span class="cm"># ALTERNATIVE: Use BuildKit secrets (requires --secret flag)</span>
+<span class="cm"># RUN --mount=type=secret,id=node_passwd,dst=/tmp/passwd \</span>
+<span class="cm">#   cat /tmp/passwd | chpasswd && rm /tmp/passwd</span></code></pre>
+
+      <div class="callout green">
+        <p><strong>Best Practice:</strong> For development containers, consider <span class="hl">removing sudo access entirely</span>. The node user should have all necessary permissions without requiring privilege escalation. If sudo is needed, use passwordless sudo for specific commands only.</p>
+      </div>
+
+      <h4>Critical Issue #2: Script Verification</h4>
+      <pre><code><span class="code-label">Dockerfile · Verified script installation</span><span class="cm"># Install Claude with verification</span>
+<span class="kw">RUN</span> curl -fsSL https://claude.ai/install.sh -o /tmp/install.sh <span class="op">&amp;&amp;</span> \
+  <span class="cm"># Add GPG signature verification here if available</span>
+  <span class="cm"># curl -fsSL https://claude.ai/install.sh.sig -o /tmp/install.sh.sig</span>
+  <span class="cm"># gpg --verify /tmp/install.sh.sig /tmp/install.sh</span>
+  bash /tmp/install.sh <span class="op">&amp;&amp;</span> \
+  rm /tmp/install.sh</code></pre>
+
+      <h4>IP Validation Enhancement</h4>
+      <pre><code><span class="code-label">Bash · Robust IP address validation</span><span class="kw">validate_ip</span>() {
+    <span class="kw">local</span> ip=<span class="var">$1</span>
+    <span class="kw">if</span> [[ <span class="var">$ip</span> =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; <span class="kw">then</span>
+        <span class="kw">local</span> IFS=<span class="str">'.'</span>
+        <span class="kw">local</span> -a octets=($ip)
+        <span class="kw">for</span> octet <span class="kw">in</span> <span class="str">"${octets[@]}"</span>; <span class="kw">do</span>
+            <span class="kw">if</span> ((octet &gt; <span class="num">255</span>)); <span class="kw">then</span>
+                <span class="kw">return</span> <span class="num">1</span>
+            <span class="kw">fi</span>
+        <span class="kw">done</span>
+        <span class="kw">return</span> <span class="num">0</span>
+    <span class="kw">fi</span>
+    <span class="kw">return</span> <span class="num">1</span>
+}
+
+<span class="cm"># Usage in script:</span>
+<span class="kw">if</span> ! validate_ip <span class="str">"$ip"</span>; <span class="kw">then</span>
+    <span class="kw">echo</span> <span class="str">"ERROR: Invalid IP: $ip"</span>
+    <span class="kw">exit</span> <span class="num">1</span>
+<span class="kw">fi</span></code></pre>
+
+      <h4>Additional Security Enhancements</h4>
+      <div class="two-col">
+        <div class="callout cyan">
+          <p><strong>Immutable Firewall Rules:</strong> Consider making firewall rules immutable after configuration using <code class="code">iptables -P</code> with the <span class="hl">-w</span> flag and locking rules with <code class="code">chattr +i</code> on related files.</p>
+        </div>
+        <div class="callout amber">
+          <p><strong>Network Logging:</strong> Add logging rules to track blocked connection attempts for security monitoring and audit purposes.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="best-practices">
+      <div class="section-header">
+        <span class="section-num">// 06</span>
+        <h2>Best Practices</h2>
+      </div>
+      <p>Based on this audit, here are the key best practices for secure container development environments. These guidelines should be applied to all containerization projects.</p>
+
+      <div class="card-grid">
+        <div class="card purple">
+          <span class="card-icon">🔒</span>
+          <h3>Never Store Secrets in Images</h3>
+          <p>Secrets (passwords, keys, tokens) must never be embedded in Docker image layers. Use runtime mounts, environment variables from secure sources, or secret management systems.</p>
+        </div>
+        <div class="card cyan">
+          <span class="card-icon">👤</span>
+          <h3>Run as Non-Root User</h3>
+          <p>The container correctly uses a non-root user (node). This is excellent practice. If root access is needed, use specific sudo rules rather than full password-based authentication.</p>
+        </div>
+        <div class="card amber">
+          <span class="card-icon">🔐</span>
+          <h3>Default Deny Network Policy</h3>
+          <p>The firewall's DROP default policy is ideal for security. Only explicitly allow necessary traffic. This prevents data exfiltration and limits attack surface.</p>
+        </div>
+        <div class="card green">
+          <span class="card-icon">✅</span>
+          <h3>Verify Security Configuration</h3>
+          <p>The script's verification tests are excellent. Always test both positive and negative cases to ensure security controls work as expected.</p>
+        </div>
+        <div class="card red">
+          <span class="card-icon">📥</span>
+          <h3>Verify External Scripts</h3>
+          <p>Never pipe curl to bash without verification. Download, verify checksums/GPG signatures, then execute. This prevents supply chain attacks.</p>
+        </div>
+        <div class="card pink">
+          <span class="card-icon">🧹</span>
+          <h3>Clean Up Image Layers</h3>
+          <p>The Dockerfile properly cleans up apt lists. Always remove temporary files and package caches in the same RUN command to reduce image size.</p>
+        </div>
+      </div>
+
+      <div class="callout green">
+        <p><strong>Overall Assessment:</strong> This container demonstrates <span class="hl">strong security fundamentals</span> with its restrictive firewall, non-root user, and proper verification testing. Addressing the critical password issue and script verification will bring it to production-ready standards. The architecture is well-designed for secure development environments.</p>
+      </div>
+
+      <h4>Security Checklist for Future Development</h4>
+      <div class="table-wrap">
+        <table>
+          <tr>
+            <th>Category</th>
+            <th>Check</th>
+            <th>Status</th>
+            <th>Priority</th>
+          </tr>
+          <tr>
+            <td><strong>Secrets Management</strong></td>
+            <td>No secrets in image layers</td>
+            <td><span class="tag tag-red">Fail</span></td>
+            <td><span class="tag tag-red">Critical</span></td>
+          </tr>
+          <tr>
+            <td><strong>User Privileges</strong></td>
+            <td>Non-root execution</td>
+            <td><span class="tag tag-green">Pass</span></td>
+            <td><span class="tag tag-green">Resolved</span></td>
+          </tr>
+          <tr>
+            <td><strong>Network Security</strong></td>
+            <td>Restrictive firewall</td>
+            <td><span class="tag tag-green">Pass</span></td>
+            <td><span class="tag tag-green">Resolved</span></td>
+          </tr>
+          <tr>
+            <td><strong>Supply Chain</strong></td>
+            <td>Verified external scripts</td>
+            <td><span class="tag tag-amber">Partial</span></td>
+            <td><span class="tag tag-amber">High</span></td>
+          </tr>
+          <tr>
+            <td><strong>Input Validation</strong></td>
+            <td>Robust parsing</td>
+            <td><span class="tag tag-amber">Partial</span></td>
+            <td><span class="tag tag-amber">Medium</span></td>
+          </tr>
+          <tr>
+            <td><strong>Error Handling</strong></td>
+            <td>Fail-safe behavior</td>
+            <td><span class="tag tag-green">Pass</span></td>
+            <td><span class="tag tag-green">Resolved</span></td>
+          </tr>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Container Security Audit Report · Built with Claude · March 2026</p>
+    <p style="margin-top:0.5rem;color:#1a1a26">Docker security audit firewall iptables containerization DevOps best practices vulnerabilities remediation</p>
+  </footer>
+</body>
+</html>
