@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Agents Deep Dive Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,300&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Fraunces', serif;
+      font-weight: 300;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+    :root {
+      --bg:         #0a0a0f;
+      --surface:    #12121a;
+      --surface2:   #1a1a26;
+      --border:     #2a2a3e;
+      --accent:     #7c3aed;
+      --accent2:    #06b6d4;
+      --accent3:    #f59e0b;
+      --accent4:    #10b981;
+      --text:       #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim:   #64748b;
+      --code-bg:    #0d0d18;
+      --red:        #ef4444;
+      --pink:       #ec4899;
+    }
+    p { margin-bottom: 1rem; color: var(--text-muted); }
+    p strong { color: var(--text); font-weight: 700; }
+    h4 { font-size: 1rem; color: var(--text); margin: 1.5rem 0 0.5rem; font-weight: 700; }
+    svg text { font-family: 'Space Mono', monospace; }
+
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 4rem 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 50%, rgba(124,58,237,0.15) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 80% 30%, rgba(6,182,212,0.1)  0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 60% 80%, rgba(245,158,11,0.08) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(124,58,237,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,58,237,0.06) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 80%);
+    }
+    .hero-content {
+      position: relative;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .badge {
+      display: inline-block;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--accent2);
+      border: 1px solid rgba(6,182,212,0.3);
+      padding: 0.3rem 0.8rem;
+      border-radius: 2px;
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .hero h1 {
+      font-size: clamp(3rem, 8vw, 7rem);
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.02em;
+    }
+    .hero h1 .line1 { color: var(--text); }
+    .hero h1 .line2 {
+      color: transparent;
+      -webkit-text-stroke: 1px var(--accent);
+      display: block;
+    }
+    .hero h1 .line3 {
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: block;
+    }
+    .hero-desc {
+      font-size: 1.2rem;
+      font-style: italic;
+      color: var(--text-muted);
+      margin-bottom: 3rem;
+    }
+    .toc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+      max-width: 900px;
+    }
+    .toc-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.6rem 1rem;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      text-decoration: none;
+      color: var(--text-muted);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.72rem;
+      transition: all 0.2s;
+      letter-spacing: 0.05em;
+    }
+    .toc-item:hover {
+      background: rgba(124,58,237,0.1);
+      border-color: var(--accent);
+      color: var(--text);
+    }
+    .toc-num { color: var(--accent); font-weight: 700; }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    .section {
+      margin-bottom: 6rem;
+      scroll-margin-top: 2rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-num {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--accent);
+      opacity: 0.7;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .section h2 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: var(--text);
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+    .card.purple::before { background: var(--accent); }
+    .card.cyan::before { background: var(--accent2); }
+    .card.amber::before { background: var(--accent3); }
+    .card.green::before { background: var(--accent4); }
+    .card.red::before { background: var(--red); }
+    .card.pink::before { background: var(--pink); }
+    .card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text); }
+    .card p  { font-size: 0.9rem; margin: 0; }
+    .card-icon { font-size: 1.5rem; margin-bottom: 0.75rem; display: block; }
+
+    .table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+    th {
+      background: var(--surface2);
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid rgba(42,42,62,0.5);
+      color: var(--text-muted);
+      vertical-align: top;
+    }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    td strong { color: var(--text); }
+    .tag {
+      display: inline-block;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 2px;
+      margin: 0.1rem;
+    }
+    .tag-green { background: rgba(16,185,129,0.15); color: #10b981; }
+    .tag-amber { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .tag-red { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .tag-blue { background: rgba(96,165,250,0.15); color: #60a5fa; }
+    .tag-purple { background: rgba(124,58,237,0.15); color: #c084fc; }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.5rem;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      position: relative;
+    }
+    code {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.8rem;
+      line-height: 1.6;
+    }
+    .code-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--accent2);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      display: block;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .kw { color: #c084fc; }
+    .fn { color: #60a5fa; }
+    .str { color: #86efac; }
+    .cm { color: var(--text-dim); font-style: italic; }
+    .num { color: var(--accent3); }
+    .cls { color: #fbbf24; }
+    .op { color: var(--accent2); }
+    .var { color: #f9a8d4; }
+
+    .callout {
+      background: rgba(124,58,237,0.08);
+      border-left: 3px solid var(--accent);
+      padding: 1rem 1.5rem;
+      margin: 1.5rem 0;
+      border-radius: 0 6px 6px 0;
+    }
+    .callout.cyan { background: rgba(6,182,212,0.08); border-left-color: var(--accent2); }
+    .callout.amber { background: rgba(245,158,11,0.08); border-left-color: var(--accent3); }
+    .callout.green { background: rgba(16,185,129,0.08); border-left-color: var(--accent4); }
+    .callout p { margin: 0; font-size: 0.9rem; }
+    .hl { color: var(--accent2); }
+    .hl-amber { color: var(--accent3); }
+    .hl-green { color: var(--accent4); }
+    .hl-purple { color: #c084fc; }
+
+    .diagram {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2rem;
+      margin: 2rem 0;
+    }
+    .diagram-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-dim);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div class="hero-grid"></div>
+    <div class="hero-content">
+      <span class="badge">Technical Guide · AI Agents · Architecture & Implementation</span>
+      <h1>
+        <span class="line1">AI Agents</span>
+        <span class="line2">Deep Dive</span>
+        <span class="line3">Architecture Guide</span>
+      </h1>
+      <p class="hero-desc">Comprehensive analysis of Claude SDK, n8n agents, and OpenClaw for building production AI systems</p>
+      <div class="toc-grid">
+        <a href="#what-is-agent" class="toc-item"><span class="toc-num">01</span>What is an AI Agent</a>
+        <a href="#three-species" class="toc-item"><span class="toc-num">02</span>Three Species of Agents</a>
+        <a href="#commonalities" class="toc-item"><span class="toc-num">03</span>What They Have in Common</a>
+        <a href="#key-differences" class="toc-item"><span class="toc-num">04</span>Key Differences</a>
+        <a href="#telegram-scenarios" class="toc-item"><span class="toc-num">05</span>Telegram Architectures</a>
+        <a href="#comparison" class="toc-item"><span class="toc-num">06</span>Direct Comparison</a>
+        <a href="#mastery-path" class="toc-item"><span class="toc-num">07</span>Mastery Path</a>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <section class="section" id="what-is-agent">
+      <div class="section-header">
+        <span class="section-num">// 01</span>
+        <h2>What is an "AI Agent" (The Shared Core)</h2>
+      </div>
+
+      <p>Across all three systems—Claude SDK, n8n agents, and OpenClaw—an <strong>AI agent</strong> is fundamentally the same concept:</p>
+
+      <div class="callout cyan">
+        <p>A piece of software that <span class="hl">receives messages or events</span>, <span class="hl">decides what to do next using an LLM</span> (often with tools), then <span class="hl">actually does things</span>: call APIs, read/write files, run workflows, etc.</p>
+      </div>
+
+      <p>n8n's own documentation defines it well: an AI agent is an <em>"autonomous system that receives data, makes rational decisions, and acts within its environment to achieve specific goals. This agent uses external tools and APIs to perform actions and retrieve information."</em></p>
+
+      <div class="diagram">
+        <div class="diagram-title">The Universal Agent Loop</div>
+        <svg viewBox="0 0 700 200" width="100%" style="max-width:700px;display:block;margin:0 auto;">
+          <defs>
+            <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#06b6d4"/>
+            </marker>
+            <marker id="arr2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#7c3aed"/>
+            </marker>
+          </defs>
+
+          <!-- User/System -->
+          <rect x="20" y="70" width="120" height="60" rx="6" fill="#1a1a26" stroke="#e2e8f0" stroke-width="1.5"/>
+          <text x="80" y="95" text-anchor="middle" fill="#e2e8f0" font-size="10" font-weight="700">User / System</text>
+          <text x="80" y="110" text-anchor="middle" fill="#94a3b8" font-size="9">Message / Event</text>
+
+          <!-- Agent Loop -->
+          <rect x="200" y="50" width="140" height="100" rx="6" fill="#1a1a26" stroke="#06b6d4" stroke-width="2"/>
+          <text x="270" y="80" text-anchor="middle" fill="#67e8f9" font-size="10" font-weight="700">Agent Loop</text>
+          <text x="270" y="98" text-anchor="middle" fill="#94a3b8" font-size="9">LLM call +</text>
+          <text x="270" y="113" text-anchor="middle" fill="#94a3b8" font-size="9">tool choice</text>
+
+          <!-- LLM Provider -->
+          <rect x="200" y="170" width="140" height="50" rx="6" fill="#1a1a26" stroke="#7c3aed" stroke-width="1.5"/>
+          <text x="270" y="192" text-anchor="middle" fill="#c084fc" font-size="10" font-weight="700">LLM Provider</text>
+          <text x="270" y="208" text-anchor="middle" fill="#94a3b8" font-size="9">Claude, GPT-4, etc.</text>
+
+          <!-- Tools -->
+          <rect x="420" y="50" width="140" height="100" rx="6" fill="#1a1a26" stroke="#10b981" stroke-width="1.5"/>
+          <text x="490" y="80" text-anchor="middle" fill="#6ee7b7" font-size="10" font-weight="700">Tools and APIs</text>
+          <text x="490" y="98" text-anchor="middle" fill="#94a3b8" font-size="9">HTTP, Files, Shell</text>
+          <text x="490" y="113" text-anchor="middle" fill="#94a3b8" font-size="9">Databases, etc.</text>
+
+          <!-- User return path -->
+          <rect x="420" y="170" width="140" height="50" rx="6" fill="#1a1a26" stroke="#f59e0b" stroke-width="1.5"/>
+          <text x="490" y="192" text-anchor="middle" fill="#fcd34d" font-size="10" font-weight="700">Response / Action</text>
+          <text x="490" y="208" text-anchor="middle" fill="#94a3b8" font-size="9">Back to user</text>
+
+          <!-- Arrows -->
+          <path d="M140 100 L200 100" stroke="#06b6d4" stroke-width="2" marker-end="url(#arr)"/>
+          <path d="M270 150 L270 170" stroke="#7c3aed" stroke-width="2" marker-end="url(#arr2)"/>
+          <path d="M270 170 L270 150" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arr2)" stroke-dasharray="4,2"/>
+          <path d="M340 100 L420 100" stroke="#10b981" stroke-width="2" marker-end="url(#arr)"/>
+          <path d="M490 150 L490 170" stroke="#f59e0b" stroke-width="2" marker-end="url(#arr)"/>
+          <path d="M490 170 L590 195 L80 195 L80 130" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arr)" stroke-dasharray="4,2"/>
+        </svg>
+      </div>
+
+      <p>That loop is the same whether it's Claude Code/Agent SDK in a Python app, n8n's AI Agent node in a workflow, or OpenClaw running on your laptop. The differences lie in <strong>where the loop runs</strong>, <strong>what tools are available</strong>, and <strong>how you interact with it</strong>.</p>
+
+      <div class="callout green">
+        <p><strong>Key insight:</strong> Understanding this core loop is the foundation for mastering any AI agent platform. Once you grasp the <span class="hl">receive → decide → act → respond</span> cycle, you can work effectively with Claude SDK, n8n, OpenClaw, or any future agent framework.</p>
+      </div>
+    </section>
+
+    <section class="section" id="three-species">
+      <div class="section-header">
+        <span class="section-num">// 02</span>
+        <h2>The Three "Species" of Agents</h2>
+      </div>
+
+      <h4>Claude "Team Agents" (Claude Code / Agent SDK / Agent Teams)</h4>
+      <p><strong>Claude Code</strong> is a terminal/IDE-based AI dev agent that can read/write files, run commands, edit code, etc. The <strong>Claude Agent SDK</strong> lets you build the same kind of agent programmatically, with the same tools, agent loop, and context management. <strong>Agent Teams</strong> coordinate multiple Claude Code sessions with shared tasks and messaging.</p>
+
+      <div class="card-grid">
+        <div class="card purple">
+          <span class="card-icon">🖥️</span>
+          <h3>Environment</h3>
+          <p>Your local machine or server; strong focus on code and dev workflows with deep repo integration.</p>
+        </div>
+        <div class="card cyan">
+          <span class="card-icon">🔧</span>
+          <h3>Tools</h3>
+          <p>Built-in tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch, AskUserQuestion.</p>
+        </div>
+        <div class="card amber">
+          <span class="card-icon">⚙️</span>
+          <h3>Execution</h3>
+          <p>The SDK (or Claude Code) executes tools directly on your machine with full system access.</p>
+        </div>
+        <div class="card green">
+          <span class="card-icon">💾</span>
+          <h3>Context</h3>
+          <p>Sessions, memory, and project-level config (CLAUDE.md, .claude/skills, .claude/commands).</p>
+        </div>
+        <div class="card pink">
+          <span class="card-icon">👥</span>
+          <h3>Multi-Agent</h3>
+          <p>Agent Teams formalize coordination with roles, shared tasks, and agent-to-agent messaging.</p>
+        </div>
+        <div class="card red">
+          <span class="card-icon">🎯</span>
+          <h3>Best For</h3>
+          <p>Code-focused agents needing deep repo access; developers building custom agent applications.</p>
+        </div>
+      </div>
+
+      <h4>n8n Agents</h4>
+      <p>n8n is a <strong>workflow automation tool</strong> with nodes for many apps. The <strong>AI Agent node</strong> embeds an LLM-powered agent into your workflow. n8n has strong Telegram support with Trigger nodes (fires on new messages) and Send nodes (send messages, edit, get chat info).</p>
+
+      <div class="card-grid">
+        <div class="card cyan">
+          <span class="card-icon">🔗</span>
+          <h3>Environment</h3>
+          <p>n8n server (self-hosted or cloud); web UI editor for visual workflow construction.</p>
+        </div>
+        <div class="card purple">
+          <span class="card-icon">🧩</span>
+          <h3>Tools</h3>
+          <p>Implemented as other nodes: HTTP Request, Google Sheets, Slack, custom code nodes.</p>
+        </div>
+        <div class="card amber">
+          <span class="card-icon">⚡</span>
+          <h3>Execution</h3>
+          <p>n8n executes the workflow; each tool call is a node execution with built-in error handling.</p>
+        </div>
+        <div class="card green">
+          <span class="card-icon">💾</span>
+          <h3>Context</h3>
+          <p>Workflows maintain state via databases, KV stores, expressions; no long-lived memory by default.</p>
+        </div>
+        <div class="card pink">
+          <span class="card-icon">🔀</span>
+          <h3>Multi-Agent</h3>
+          <p>Design multi-agent patterns with sub-workflows and "gatekeeper" agents for coordination.</p>
+        </div>
+        <div class="card red">
+          <span class="card-icon">📱</span>
+          <h3>Best For</h3>
+          <p>Low-code visual automation; Telegram + 400+ integrations without deep code-level access.</p>
+        </div>
+      </div>
+
+      <h4>OpenClaw</h4>
+      <p>OpenClaw is an <strong>open-source personal AI assistant</strong> that runs on your machine and talks via chat apps (Telegram, WhatsApp, Discord, Slack, Signal, iMessage). It's explicitly an <em>"open agent platform"</em> that can control your machine: read/write files, run shell commands, browse the web, use plugins/skills, with persistent memory.</p>
+
+      <div class="card-grid">
+        <div class="card purple">
+          <span class="card-icon">💻</span>
+          <h3>Environment</h3>
+          <p>Your machine (Mac, Windows, Linux, VPS, homelab); self-hosted with full system access.</p>
+        </div>
+        <div class="card cyan">
+          <span class="card-icon">🔌</span>
+          <h3>Tools</h3>
+          <p>Local tools (files, shell), web browsing, plugins/integrations (Gmail, GitHub, Obsidian).</p>
+        </div>
+        <div class="card amber">
+          <span class="card-icon">⚙️</span>
+          <h3>Execution</h3>
+          <p>The agent executes tools directly on your machine with broad permissions and capabilities.</p>
+        </div>
+        <div class="card green">
+          <span class="card-icon">🧠</span>
+          <h3>Context</h3>
+          <p>Persistent memory across chats; supports "skills" and plugins that extend capabilities.</p>
+        </div>
+        <div class="card pink">
+          <span class="card-icon">👥</span>
+          <h3>Multi-Agent</h3>
+          <p>Run multiple instances; projects like ClawWork use OpenClaw as AI coworker for multi-professional work.</p>
+        </div>
+        <div class="card red">
+          <span class="card-icon">📱</span>
+          <h3>Best For</h3>
+          <p>Personal AI assistant in Telegram/WhatsApp; acts on your behalf without building from scratch.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="commonalities">
+      <div class="section-header">
+        <span class="section-num">// 03</span>
+        <h2>What They Have in Common</h2>
+      </div>
+
+      <p>Despite their differences, all three platforms share the same fundamental architecture. Understanding these commonalities helps you transfer knowledge between them.</p>
+
+      <div class="table-wrap">
+        <table>
+          <tr>
+            <th>Aspect</th>
+            <th>Common Pattern</th>
+            <th>Implementation Across Platforms</th>
+          </tr>
+          <tr>
+            <td><strong>Core Loop</strong></td>
+            <td>LLM decides which tool(s) to call, tools execute, results feed back into next LLM call</td>
+            <td><span class="tag tag-purple">Claude SDK</span> <span class="tag tag-cyan">n8n</span> <span class="tag tag-amber">OpenClaw</span></td>
+          </tr>
+          <tr>
+            <td><strong>Tools</strong></td>
+            <td>Functions that wrap APIs, files, shell commands, or other services</td>
+            <td><span class="tag tag-purple">Built-in tools</span> <span class="tag tag-cyan">Nodes</span> <span class="tag tag-amber">Skills/Plugins</span></td>
+          </tr>
+          <tr>
+            <td><strong>Context</strong></td>
+            <td>Conversation history + some memory / project context</td>
+            <td><span class="tag tag-purple">Sessions</span> <span class="tag tag-cyan">Workflow state</span> <span class="tag tag-amber">Persistent memory</span></td>
+          </tr>
+          <tr>
+            <td><strong>Triggers</strong></td>
+            <td>Webhooks, chat messages, schedules start the agent</td>
+            <td><span class="tag tag-purple">Function calls</span> <span class="tag tag-cyan">Trigger nodes</span> <span class="tag tag-amber">Channel events</span></td>
+          </tr>
+          <tr>
+            <td><strong>Hosting</strong></td>
+            <td>You run the agent loop on your own infrastructure</td>
+            <td><span class="tag tag-purple">Your app</span> <span class="tag tag-cyan">n8n server</span> <span class="tag tag-amber">Your machine</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="callout cyan">
+        <p><strong>Universal reliance on tool calling:</strong> All three platforms depend on <span class="hl">tool calling / function calling</span> to let models "act." They all require some <span class="hl">state management</span> (session, DB, or in-memory) and have a <span class="hl">security model</span> (permissions, sandboxes, allowlists).</p>
+      </div>
+    </section>
+
+    <section class="section" id="key-differences">
+      <div class="section-header">
+        <span class="section-num">// 04</span>
+        <h2>Key Differences (High-Level)</h2>
+      </div>
+
+      <h4>Positioning & "Shape"</h4>
+      <div class="table-wrap">
+        <table>
+          <tr>
+            <th>Aspect</th>
+            <th>Claude Code / Agent SDK</th>
+            <th>n8n agents</th>
+            <th>OpenClaw</th>
+          </tr>
+          <tr>
+            <td><strong>Primary role</strong></td>
+            <td>Code & dev agent; SDK for building custom agents</td>
+            <td>Visual workflow automation with AI nodes</td>
+            <td>Personal AI assistant in chat apps</td>
+          </tr>
+          <tr>
+            <td><strong>Primary interface</strong></td>
+            <td>CLI / IDE / your own UI</td>
+            <td>n8n web editor</td>
+            <td>Telegram, WhatsApp, Discord, Slack, etc.</td>
+          </tr>
+          <tr>
+            <td><strong>Target user</strong></td>
+            <td>Developers building custom agents</td>
+            <td>Devs & no-coders building workflows</td>
+            <td>Power users wanting personal assistant</td>
+          </tr>
+          <tr>
+            <td><strong>Tools focus</strong></td>
+            <td>Code tools: files, git, bash, grep, web search</td>
+            <td>Business tools: SaaS apps, DBs, HTTP, email</td>
+            <td>Everything: files, shell, web, plugins, skills</td>
+          </tr>
+        </table>
+      </div>
+
+      <h4>Capabilities & Trade-offs</h4>
+      <div class="table-wrap">
+        <table>
+          <tr>
+            <th>Aspect</th>
+            <th>Claude Code / Agent SDK</th>
+            <th>n8n agents</th>
+            <th>OpenClaw</th>
+          </tr>
+          <tr>
+            <td><strong>Code-level access</strong></td>
+            <td><span class="tag tag-green">Very strong</span> — can read/write repo, run tests, edit code</td>
+            <td><span class="tag tag-amber">Limited</span> — can run commands, but not a dev environment</td>
+            <td><span class="tag tag-green">Strong</span> — can run arbitrary commands on host</td>
+          </tr>
+          <tr>
+            <td><strong>Chat integrations</strong></td>
+            <td><span class="tag tag-red">None built-in</span> — you implement Telegram yourself</td>
+            <td><span class="tag tag-green">Strong built-in</span> — Telegram Trigger + Send nodes</td>
+            <td><span class="tag tag-green">Telegram first-class</span> — long-polling, groups, streaming</td>
+          </tr>
+          <tr>
+            <td><strong>Observability</strong></td>
+            <td>You build logging/monitoring</td>
+            <td>Built-in execution history, logs, UI observability</td>
+            <td>Logs + CLI; you build monitoring yourself</td>
+          </tr>
+          <tr>
+            <td><strong>Security</strong></td>
+            <td>You design auth, permissions, sandboxing</td>
+            <td>n8n's permissions model + external secrets</td>
+            <td>Powerful but <span class="tag tag-red">security criticisms</span> due to broad access</td>
+          </tr>
+          <tr>
+            <td><strong>Extensibility</strong></td>
+            <td>SDK + custom tools + MCP</td>
+            <td>Nodes + code nodes + MCP client</td>
+            <td>Plugins/skills; can even write its own skills</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="callout amber">
+        <p><strong>Critical trade-off:</strong> There's no "best" platform—only the <span class="hl">right tool for the job</span>. Claude SDK excels at code-heavy automation, n8n shines at business workflow automation, and OpenClaw provides the fastest path to a personal AI assistant in your existing chat apps.</p>
+      </div>
+    </section>
+
+    <section class="section" id="telegram-scenarios">
+      <div class="section-header">
+        <span class="section-num">// 05</span>
+        <h2>Telegram Scenario: Three Architectures</h2>
+      </div>
+
+      <p>Let's examine how to implement <strong>Telegram → AI Agent → Response</strong> in each platform, with concrete architecture diagrams.</p>
+
+      <h4>Telegram → n8n</h4>
+      <p><strong>How it works:</strong> Create a bot via @BotFather, configure Telegram Trigger in n8n. The Trigger emits items containing message text, chat ID, user info. Feed those into an AI Agent node with tools (HTTP Request, Google Calendar, Code). Finally, use the Telegram node to send replies back.</p>
+
+      <div class="diagram">
+        <div class="diagram-title">Telegram to n8n Architecture</div>
+        <svg viewBox="0 0 800 300" width="100%" style="max-width:800px;display:block;margin:0 auto;">
+          <defs>
+            <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#06b6d4"/>
+            </marker>
+          </defs>
+
+          <!-- Telegram -->
+          <rect x="30" y="110" width="120" height="80" rx="6" fill="#1a1a26" stroke="#06b6d4" stroke-width="2"/>
+          <text x="90" y="140" text-anchor="middle" fill="#67e8f9" font-size="11" font-weight="700">Telegram</text>
+          <text x="90" y="158" text-anchor="middle" fill="#94a3b8" font-size="9">Bot API</text>
+          <text x="90" y="173" text-anchor="middle" fill="#94a3b8" font-size="9">updates</text>
+
+          <!-- Telegram Trigger -->
+          <rect x="200" y="110" width="140" height="80" rx="6" fill="#1a1a26" stroke="#7c3aed" stroke-width="1.5"/>
+          <text x="270" y="140" text-anchor="middle" fill="#c084fc" font-size="10" font-weight="700">Telegram Trigger</text>
+          <text x="270" y="158" text-anchor="middle" fill="#94a3b8" font-size="9">message text</text>
+          <text x="270" y="173" text-anchor="middle" fill="#94a3b8" font-size="9">chat ID, user info</text>
+
+          <!-- AI Agent -->
+          <rect x="390" y="90" width="140" height="120" rx="6" fill="#1a1a26" stroke="#10b981" stroke-width="2"/>
+          <text x="460" y="120" text-anchor="middle" fill="#6ee7b7" font-size="11" font-weight="700">AI Agent node</text>
+          <text x="460" y="140" text-anchor="middle" fill="#94a3b8" font-size="9">System prompt:</text>
+          <text x="460" y="155" text-anchor="middle" fill="#94a3b8" font-size="9">"helpful assistant"</text>
+          <text x="460" y="175" text-anchor="middle" fill="#94a3b8" font-size="9">Tools: HTTP, Calendar,</text>
+          <text x="460" y="190" text-anchor="middle" fill="#94a3b8" font-size="9">Code nodes</text>
+
+          <!-- Tools -->
+          <rect x="580" y="30" width="160" height="70" rx="6" fill="#1a1a26" stroke="#f59e0b" stroke-width="1.5"/>
+          <text x="660" y="55" text-anchor="middle" fill="#fcd34d" font-size="10" font-weight="700">Tool nodes</text>
+          <text x="660" y="72" text-anchor="middle" fill="#94a3b8" font-size="9">HTTP Request</text>
+          <text x="660" y="87" text-anchor="middle" fill="#94a3b8" font-size="9">Google Calendar, Code</text>
+
+          <!-- Telegram Send -->
+          <rect x="580" y="120" width="160" height="70" rx="6" fill="#1a1a26" stroke="#ec4899" stroke-width="1.5"/>
+          <text x="660" y="145" text-anchor="middle" fill="#f9a8d4" font-size="10" font-weight="700">Telegram node</text>
+          <text x="660" y="162" text-anchor="middle" fill="#94a3b8" font-size="9">sendMessage</text>
+          <text x="660" y="177" text-anchor="middle" fill="#94a3b8" font-size="9">Chat ID from trigger</text>
+
+          <!-- Arrows -->
+          <path d="M150 150 L200 150" stroke="#06b6d4" stroke-width="2" marker-end="url(#arr)"/>
+          <path d="M340 150 L390 150" stroke="#7c3aed" stroke-width="2" marker-end="url(#arr)"/>
+          <path d="M530 120 L580 65" stroke="#10b981" stroke-width="1.5" marker-end="url(#arr)"/>
+          <path d="M530 180 L580 155" stroke="#ec4899" stroke-width="2" marker-end="url(#arr)"/>
+        </svg>
+      </div>
+
+      <div class="callout green">
+        <p><strong>Pros:</strong> Very quick to build visually; no heavy coding; built-in Telegram support, error handling, retries, execution history.<br><strong>Cons:</strong> Tools are n8n nodes, not arbitrary code on your machine; less suitable for deep, open-ended "computer use" style tasks.</p>
+      </div>
+
+      <h4>Telegram → Claude SDK Python App</h4>
+      <p><strong>How it works:</strong> Create a Telegram bot and get a token. Run a Python process using python-telegram-bot or aiogram that polls Telegram Bot API or sets a webhook. Your code receives messages, turns them into prompts for the Claude Agent SDK, runs the agent loop, and sends replies back to Telegram.</p>
+
+      <pre><code><span class="code-label">Python · Telegram + Claude Agent SDK</span><span class="kw">import</span> <span class="cls">asyncio</span>
+<span class="kw">from</span> <span class="cls">telegram</span> <span class="kw">import</span> <span class="cls">Update</span>
+<span class="kw">from</span> <span class="cls">telegram.ext</span> <span class="kw">import</span> <span class="cls">ApplicationBuilder</span>, <span class="cls">ContextTypes</span>, <span class="cls">MessageHandler</span>, <span class="cls">filters</span>
+<span class="kw">from</span> <span class="cls">claude_agent_sdk</span> <span class="kw">import</span> <span class="fn">query</span>, <span class="cls">ClaudeAgentOptions</span>
+
+<span class="var">TELEGRAM_TOKEN</span> <span class="op">=</span> <span class="str">"your-bot-token"</span>
+
+<span class="kw">async</span> <span class="kw">def</span> <span class="fn">handle_message</span>(<span class="var">update</span>: <span class="cls">Update</span>, <span class="var">context</span>: <span class="cls">ContextTypes</span>.<span class="cls">DEFAULT_TYPE</span>):
+    <span class="var">text</span> <span class="op">=</span> <span class="var">update</span>.<span class="var">message</span>.<span class="var">text</span>
+    <span class="var">chat_id</span> <span class="op">=</span> <span class="var">update</span>.<span class="var">effective_chat</span>.<span class="var">id</span>
+
+    <span class="cm"># Run Claude Agent SDK</span>
+    <span class="kw">async</span> <span class="kw">for</span> <span class="var">msg</span> <span class="kw">in</span> <span class="fn">query</span>(
+        <span class="var">prompt</span><span class="op">=</span><span class="var">text</span>,
+        <span class="var">options</span><span class="op">=</span><span class="cls">ClaudeAgentOptions</span>(
+            <span class="var">allowed_tools</span><span class="op">=</span>[<span class="str">"Bash"</span>, <span class="str">"Read"</span>, <span class="str">"Write"</span>, <span class="str">"Edit"</span>],
+        ),
+    ):
+        <span class="kw">if</span> <span class="fn">hasattr</span>(<span class="var">msg</span>, <span class="str">"result"</span>):
+            <span class="kw">await</span> <span class="var">context</span>.<span class="var">bot</span>.<span class="fn">send_message</span>(<span class="var">chat_id</span><span class="op">=</span><span class="var">chat_id</span>, <span class="var">text</span><span class="op">=</span><span class="var">msg</span>.<span class="var">result</span>)</code></pre>
+
+      <div class="callout purple">
+        <p><strong>Pros:</strong> Full control over message-to-prompt transformation, tool exposure, sessions, and memory. Integrate with any Python library or internal service. Good fit for code-heavy agents needing deep repo access.<br><strong>Cons:</strong> You must build and operate Telegram integration yourself: bot framework, webhooks/polling, error handling, logging, auth, rate limiting, observability.</p>
+      </div>
+
+      <h4>Telegram → OpenClaw</h4>
+      <p><strong>How it works:</strong> Create a Telegram bot and enable it as an OpenClaw channel. OpenClaw's Telegram channel uses the Bot API with long polling by default (webhook optional), supporting DMs and group chats with mention handling and streaming replies. OpenClaw runs as a gateway + agent on your machine, receiving messages, building prompts with memory/skills, calling an LLM, using skills/plugins to execute actions, and sending replies back.</p>
+
+      <div class="diagram">
+        <div class="diagram-title">Telegram to OpenClaw Architecture</div>
+        <svg viewBox="0 0 800 300" width="100%" style="max-width:800px;display:block;margin:0 auto;">
+          <defs>
+            <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#06b6d4"/>
+            </marker>
+          </defs>
+
+          <!-- Telegram -->
+          <rect x="30" y="110" width="120" height="80" rx="6" fill="#1a1a26" stroke="#06b6d4" stroke-width="2"/>
+          <text x="90" y="140" text-anchor="middle" fill="#67e8f9" font-size="11" font-weight="700">Telegram</text>
+          <text x="90" y="158" text-anchor="middle" fill="#94a3b8" font-size="9">Bot API</text>
+          <text x="90" y="173" text-anchor="middle" fill="#94a3b8" font-size="9">long-polling/webhook</text>
+
+          <!-- Gateway -->
+          <rect x="200" y="110" width="140" height="80" rx="6" fill="#1a1a26" stroke="#7c3aed" stroke-width="1.5"/>
+          <text x="270" y="140" text-anchor="middle" fill="#c084fc" font-size="10" font-weight="700">OpenClaw Gateway</text>
+          <text x="270" y="158" text-anchor="middle" fill="#94a3b8" font-size="9">Channel handler</text>
+          <text x="270" y="173" text-anchor="middle" fill="#94a3b8" font-size="9">Message normalization</text>
+
+          <!-- Agent -->
+          <rect x="390" y="90" width="140" height="120" rx="6" fill="#1a1a26" stroke="#10b981" stroke-width="2"/>
+          <text x="460" y="120" text-anchor="middle" fill="#6ee7b7" font-size="11" font-weight="700">OpenClaw Agent</text>
+          <text x="460" y="145" text-anchor="middle" fill="#94a3b8" font-size="9">Prompt + context</text>
+          <text x="460" y="160" text-anchor="middle" fill="#94a3b8" font-size="9">Memory, skills</text>
+          <text x="460" y="180" text-anchor="middle" fill="#94a3b8" font-size="9">LLM call</text>
+
+          <!-- Skills -->
+          <rect x="580" y="30" width="160" height="70" rx="6" fill="#1a1a26" stroke="#f59e0b" stroke-width="1.5"/>
+          <text x="660" y="55" text-anchor="middle" fill="#fcd34d" font-size="10" font-weight="700">Skills / Plugins</text>
+          <text x="660" y="72" text-anchor="middle" fill="#94a3b8" font-size="9">Files, APIs, Web</text>
+          <text x="660" y="87" text-anchor="middle" fill="#94a3b8" font-size="9">Email, Calendar, etc.</text>
+
+          <!-- Response -->
+          <rect x="580" y="120" width="160" height="70" rx="6" fill="#1a1a26" stroke="#ec4899" stroke-width="1.5"/>
+          <text x="660" y="145" text-anchor="middle" fill="#f9a8d4" font-size="10" font-weight="700">Response</text>
+          <text x="660" y="162" text-anchor="middle" fill="#94a3b8" font-size="9">sendMessage</text>
+          <text x="660" y="177" text-anchor="middle" fill="#94a3b8" font-size="9">Back to chat</text>
+
+          <!-- Arrows -->
+          <path d="M150 150 L200 150" stroke="#06b6d4" stroke-width="2" marker-end="url(#arr)"/>
+          <path d="M340 150 L390 150" stroke="#7c3aed" stroke-width="2" marker-end="url(#arr)"/>
+          <path d="M530 120 L580 65" stroke="#10b981" stroke-width="1.5" marker-end="url(#arr)"/>
+          <path d="M530 180 L580 155" stroke="#ec4899" stroke-width="2" marker-end="url(#arr)"/>
+        </svg>
+      </div>
+
+      <div class="callout amber">
+        <p><strong>Pros:</strong> Very fast to get a Telegram-native personal agent; no need to implement Telegram logic or agent loop yourself; built-in memory, skills, and many integrations out of the box.<br><strong>Cons:</strong> You're adopting a full self-hosted agent with broad access to your machine and accounts; security model is powerful but also a big responsibility.</p>
+      </div>
+    </section>
+
+    <section class="section" id="comparison">
+      <div class="section-header">
+        <span class="section-num">// 06</span>
+        <h2>Direct Comparison: Telegram Scenarios</h2>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <tr>
+            <th>Aspect</th>
+            <th>Telegram → n8n</th>
+            <th>Telegram → Claude SDK app</th>
+            <th>Telegram → OpenClaw</th>
+          </tr>
+          <tr>
+            <td><strong>Telegram integration owned by</strong></td>
+            <td>n8n (Telegram Trigger + nodes)</td>
+            <td>You (Python bot library)</td>
+            <td>OpenClaw (Telegram channel)</td>
+          </tr>
+          <tr>
+            <td><strong>Agent loop location</strong></td>
+            <td>n8n AI Agent node in workflow</td>
+            <td>Your Python process using Claude Agent SDK</td>
+            <td>OpenClaw gateway/agent process</td>
+          </tr>
+          <tr>
+            <td><strong>Tool execution</strong></td>
+            <td>n8n server (cloud or self-hosted)</td>
+            <td>Your Python app's environment</td>
+            <td>Machine OpenClaw runs on</td>
+          </tr>
+          <tr>
+            <td><strong>Main use case</strong></td>
+            <td>Telegram bot automating business workflows</td>
+            <td>Code-heavy agent, custom logic, deep integrations</td>
+            <td>Personal AI assistant in Telegram acting on your machine</td>
+          </tr>
+          <tr>
+            <td><strong>Setup effort</strong></td>
+            <td><span class="tag tag-green">Medium</span> (design workflow in UI)</td>
+            <td><span class="tag tag-red">High</span> (write and operate bot)</td>
+            <td><span class="tag tag-amber">Medium</span> (install and configure OpenClaw)</td>
+          </tr>
+          <tr>
+            <td><strong>Flexibility</strong></td>
+            <td>Moderate (nodes + code nodes)</td>
+            <td>High (any Python code + Agent SDK tools)</td>
+            <td>High (skills + plugins, within OpenClaw framework)</td>
+          </tr>
+          <tr>
+            <td><strong>Observability</strong></td>
+            <td>Built-in execution history</td>
+            <td>You build logging/monitoring</td>
+            <td>Logs + metrics; you build dashboards</td>
+          </tr>
+        </table>
+      </div>
+
+      <h4>When to Choose Which</h4>
+      <div class="card-grid">
+        <div class="card cyan">
+          <span class="card-icon">🔗</span>
+          <h3>Choose Telegram → n8n</h3>
+          <p>You want <strong>no-code/low-code</strong> Telegram bot. Need integrations with SaaS tools (Google Sheets, Slack, Jira). OK with tools being n8n nodes, not arbitrary code on laptop.</p>
+        </div>
+        <div class="card purple">
+          <span class="card-icon">👨‍💻</span>
+          <h3>Choose Telegram → Claude SDK</h3>
+          <p>You're a <strong>developer building custom agent</strong> with special requirements. Want deep integration with codebase, internal APIs, existing systems. OK owning Telegram integration, infra, observability.</p>
+        </div>
+        <div class="card amber">
+          <span class="card-icon">🤖</span>
+          <h3>Choose Telegram → OpenClaw</h3>
+          <p>You want <strong>ready-made personal assistant</strong> in Telegram. Want it to act on your behalf (email, calendar, files, devices) without building everything from scratch. Comfortable self-hosting powerful agent.</p>
+        </div>
+      </div>
+
+      <div class="callout green">
+        <p><strong>Decision framework:</strong> Start with your <span class="hl">primary constraint</span>. If it's development speed and business integrations → n8n. If it's custom code and deep control → Claude SDK. If it's personal productivity and minimal setup → OpenClaw. You can always migrate between platforms as needs evolve.</p>
+      </div>
+    </section>
+
+    <section class="section" id="mastery-path">
+      <div class="section-header">
+        <span class="section-num">// 07</span>
+        <h2>How to "Master" These Agents</h2>
+      </div>
+
+      <p>To really get fluent with AI agents, follow this progression from fundamentals to advanced mastery.</p>
+
+      <div class="card-grid">
+        <div class="card purple">
+          <span class="card-icon">1️⃣</span>
+          <h3>Understand the Core Loop</h3>
+          <p>Implement a minimal "agentic loop" yourself: Receive a message → call Claude/OpenAI with tools → execute tool → reply. This is what all three platforms do internally.</p>
+        </div>
+        <div class="card cyan">
+          <span class="card-icon">2️⃣</span>
+          <h3>Build Tiny Telegram Agent with Claude SDK</h3>
+          <p>Start from the skeleton code. Add one tool (run shell command or read file). Add logging and simple per-user rate limiting.</p>
+        </div>
+        <div class="card amber">
+          <span class="card-icon">3️⃣</span>
+          <h3>Recreate Same Agent in n8n</h3>
+          <p>Use Telegram Trigger → AI Agent node → Telegram node. Implement same tool as HTTP Request or Code node. Compare development speed, observability, flexibility.</p>
+        </div>
+        <div class="card green">
+          <span class="card-icon">4️⃣</span>
+          <h3>Finally, Try OpenClaw</h3>
+          <p>Install locally, configure Telegram channel. Add simple skill (script that calls API). Compare how much "plumbing" you get for free versus DIY approach.</p>
+        </div>
+      </div>
+
+      <div class="callout cyan">
+        <p><strong>Mastery milestone:</strong> Once you've implemented the same agent in all three platforms, the differences will be very concrete. You'll have a clear mental model for <span class="hl">any future AI agent platform</span> because you'll recognize the underlying patterns: agent loop, tool calling, state management, and security models.</p>
+      </div>
+
+      <h4>Key Mental Models to Internalize</h4>
+      <div class="industry-grid">
+        <div class="industry-card">
+          <div class="industry-header">
+            <div class="industry-icon" style="background:rgba(124,58,237,0.15)">🔄</div>
+            <div>
+              <h3>The Agent Loop</h3>
+              <small>Universal Pattern</small>
+            </div>
+          </div>
+          <div class="industry-body">
+            <p>All AI agents follow receive → decide → act → respond. The implementation details vary, but the core architecture is identical across platforms.</p>
+          </div>
+        </div>
+
+        <div class="industry-card">
+          <div class="industry-header">
+            <div class="industry-icon" style="background:rgba(6,182,212,0.15)">🔧</div>
+            <div>
+              <h3>Tool Calling</h3>
+              <small>Capability Bridge</small>
+            </div>
+          </div>
+          <div class="industry-body">
+            <p>Tools are how LLMs "act" in the world. Understanding tool design, error handling, and result formatting is critical for building effective agents.</p>
+          </div>
+        </div>
+
+        <div class="industry-card">
+          <div class="industry-header">
+            <div class="industry-icon" style="background:rgba(245,158,11,0.15)">💾</div>
+            <div>
+              <h3>State Management</h3>
+              <small>Context & Memory</small>
+            </div>
+          </div>
+          <div class="industry-body">
+            <p>Every agent needs to manage conversation history, session state, and persistent context. The approach differs but the need is universal.</p>
+          </div>
+        </div>
+
+        <div class="industry-card">
+          <div class="industry-header">
+            <div class="industry-icon" style="background:rgba(16,185,129,0.15)">🔒</div>
+            <div>
+              <h3>Security Model</h3>
+              <small>Permissions & Sandboxing</small>
+            </div>
+          </div>
+          <div class="industry-body">
+            <p>Agents with tool access need security boundaries. Understanding authentication, authorization, and sandboxing is essential for production systems.</p>
+          </div>
+        </div>
+
+        <div class="industry-card">
+          <div class="industry-header">
+            <div class="industry-icon" style="background:rgba(236,72,153,0.15)">📊</div>
+            <div>
+              <h3>Observability</h3>
+              <small>Debugging & Monitoring</small>
+            </div>
+          </div>
+          <div class="industry-body">
+            <p>AI agents produce non-deterministic outputs. Comprehensive logging, tracing, and monitoring are essential for debugging and trust.</p>
+          </div>
+        </div>
+
+        <div class="industry-card">
+          <div class="industry-header">
+            <div class="industry-icon" style="background:rgba(239,68,68,0.15)">🎯</div>
+            <div>
+              <h3>Platform Fit</h3>
+              <small>Right Tool for Job</small>
+            </div>
+          </div>
+          <div class="industry-body">
+            <p>No platform is universally "best." Choose based on use case: n8n for business workflows, Claude SDK for code-heavy automation, OpenClaw for personal productivity.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout amber">
+        <p><strong>The path to mastery:</strong> Don't just read about these platforms—<span class="hl">build with them</span>. Implement the same simple agent in each environment. The concrete experience will teach you more than any documentation. Once you understand the patterns, you'll be able to pick up any new AI agent framework in hours, not weeks.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>AI Agents Deep Dive Guide · Built with Claude · March 2026</p>
+    <p style="margin-top:0.5rem;color:#1a1a26">AI agents architecture implementation comparison Claude SDK n8n OpenClaw Telegram bot integration tool calling state management security observability mastery path</p>
+  </footer>
+</body>
+</html>
