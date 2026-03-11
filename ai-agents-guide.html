@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Agents: The Complete Architecture Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a26;
+  --border: #2a2a3e;
+  --accent: #7c3aed;
+  --accent2: #06b6d4;
+  --accent3: #f59e0b;
+  --accent4: #10b981;
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --code-bg: #0d0d18;
+  --red: #ef4444;
+  --pink: #ec4899;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* HERO */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4rem 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(ellipse 80% 60% at 20% 50%, rgba(124,58,237,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 80% 30%, rgba(6,182,212,0.1) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 60% 80%, rgba(245,158,11,0.08) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(124,58,237,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124,58,237,0.06) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 80%);
+}
+
+.hero-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.badge {
+  display: inline-block;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--accent2);
+  border: 1px solid rgba(6,182,212,0.3);
+  padding: 0.3rem 0.8rem;
+  border-radius: 2px;
+  margin-bottom: 1.5rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  font-size: clamp(3rem, 8vw, 7rem);
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.02em;
+}
+
+.hero h1 .line1 { color: var(--text); }
+.hero h1 .line2 { 
+  color: transparent;
+  -webkit-text-stroke: 1px var(--accent);
+  display: block;
+}
+.hero h1 .line3 {
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: block;
+}
+
+.hero-desc {
+  font-size: 1.15rem;
+  color: var(--text-muted);
+  max-width: 600px;
+  margin-bottom: 3rem;
+  font-style: italic;
+}
+
+.toc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+  max-width: 900px;
+}
+
+.toc-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1rem;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  text-decoration: none;
+  color: var(--text-muted);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.72rem;
+  transition: all 0.2s;
+  letter-spacing: 0.05em;
+}
+
+.toc-item:hover {
+  background: rgba(124,58,237,0.1);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.toc-num {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* MAIN LAYOUT */
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* SECTION */
+.section {
+  margin-bottom: 6rem;
+  scroll-margin-top: 2rem;
+}
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-num {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--accent);
+  opacity: 0.7;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.section h2 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+p { margin-bottom: 1rem; color: var(--text-muted); }
+p strong { color: var(--text); font-weight: 700; }
+
+/* CARDS */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+
+.card.purple::before { background: var(--accent); }
+.card.cyan::before { background: var(--accent2); }
+.card.amber::before { background: var(--accent3); }
+.card.green::before { background: var(--accent4); }
+.card.red::before { background: var(--red); }
+.card.pink::before { background: var(--pink); }
+
+.card-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+.card h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: var(--text);
+}
+
+.card p {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+/* CODE */
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.5rem;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  position: relative;
+}
+
+.code-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--accent2);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  display: block;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+code {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.kw { color: #c084fc; }
+.fn { color: #60a5fa; }
+.str { color: #86efac; }
+.cm { color: var(--text-dim); font-style: italic; }
+.num { color: var(--accent3); }
+.cls { color: #fbbf24; }
+.op { color: var(--accent2); }
+.var { color: #f9a8d4; }
+
+/* DIAGRAM */
+.diagram {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2rem;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+}
+
+.diagram-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+/* SVG DIAGRAMS */
+svg text { font-family: 'Space Mono', monospace; }
+
+/* CALLOUT */
+.callout {
+  background: rgba(124,58,237,0.08);
+  border-left: 3px solid var(--accent);
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 0 6px 6px 0;
+}
+
+.callout.cyan { background: rgba(6,182,212,0.08); border-left-color: var(--accent2); }
+.callout.amber { background: rgba(245,158,11,0.08); border-left-color: var(--accent3); }
+.callout.green { background: rgba(16,185,129,0.08); border-left-color: var(--accent4); }
+
+.callout p { margin: 0; font-size: 0.9rem; }
+
+/* TABLE */
+.table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+th {
+  background: var(--surface2);
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(42,42,62,0.5);
+  color: var(--text-muted);
+  vertical-align: top;
+}
+tr:hover td { background: rgba(255,255,255,0.02); }
+td strong { color: var(--text); }
+td .tag {
+  display: inline-block;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 2px;
+  margin: 0.1rem;
+}
+.tag-green { background: rgba(16,185,129,0.15); color: var(--accent4); }
+.tag-amber { background: rgba(245,158,11,0.15); color: var(--accent3); }
+.tag-red { background: rgba(239,68,68,0.15); color: var(--red); }
+.tag-blue { background: rgba(96,165,250,0.15); color: #60a5fa; }
+.tag-purple { background: rgba(124,58,237,0.15); color: #c084fc; }
+
+/* INDUSTRY CARDS */
+.industry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.25rem;
+  margin: 1.5rem 0;
+}
+
+.industry-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.industry-header {
+  padding: 1.25rem 1.5rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.industry-icon {
+  width: 44px; height: 44px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.industry-header h3 { font-size: 1rem; font-weight: 700; color: var(--text); margin: 0; }
+.industry-header small { color: var(--text-dim); font-size: 0.8rem; font-family: 'Space Mono', monospace; }
+
+.industry-body { padding: 0 1.5rem 1.5rem; }
+.industry-body p { font-size: 0.88rem; margin-bottom: 0.75rem; }
+
+.use-cases { list-style: none; }
+.use-cases li {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  padding: 0.3rem 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.use-cases li::before { content: '→'; color: var(--accent2); flex-shrink: 0; }
+
+/* FOOTER */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-dim);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* HIGHLIGHT */
+.hl { color: var(--accent2); }
+.hl-amber { color: var(--accent3); }
+.hl-green { color: var(--accent4); }
+.hl-purple { color: #c084fc; }
+
+h4 { font-size: 1rem; color: var(--text); margin: 1.5rem 0 0.5rem; font-weight: 700; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+@media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <span class="badge">Expert Architecture Reference · 2025</span>
+    <h1>
+      <span class="line1">Building</span>
+      <span class="line2">Intelligent</span>
+      <span class="line3">AI Agents</span>
+    </h1>
+    <p class="hero-desc">A comprehensive guide to LLM-powered agents — from core concepts and cognitive architectures to multi-agent systems and production deployment.</p>
+    <div class="toc-grid">
+      <a href="#concepts" class="toc-item"><span class="toc-num">01</span> Core Concepts</a>
+      <a href="#memory" class="toc-item"><span class="toc-num">02</span> Memory &amp; Tools</a>
+      <a href="#cognitive" class="toc-item"><span class="toc-num">03</span> Cognitive Arch.</a>
+      <a href="#frameworks" class="toc-item"><span class="toc-num">04</span> Frameworks</a>
+      <a href="#multiagent" class="toc-item"><span class="toc-num">05</span> Multi-Agent</a>
+      <a href="#hosting" class="toc-item"><span class="toc-num">06</span> Hosting</a>
+      <a href="#usecases" class="toc-item"><span class="toc-num">07</span> Use Cases</a>
+    </div>
+  </div>
+</div>
+
+<main>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- SECTION 1: CORE CONCEPTS -->
+<!-- ═══════════════════════════════════════════════════ -->
+<section class="section" id="concepts">
+  <div class="section-header">
+    <span class="section-num">// 01</span>
+    <h2>What Are AI Agents?</h2>
+  </div>
+
+  <p>An <strong>AI agent</strong> is an LLM-powered system that can autonomously perceive its environment, reason about a goal, plan a sequence of actions, execute those actions using tools, and iterate until the goal is achieved — all with minimal human intervention.</p>
+
+  <p>Unlike a simple chatbot (single-turn request → response), an agent operates in a <strong>loop</strong>: it thinks, acts, observes the result, and thinks again.</p>
+
+  <div class="diagram">
+    <div class="diagram-title">The Agent Loop</div>
+    <svg viewBox="0 0 800 180" width="100%" style="max-width:800px;display:block;margin:0 auto;">
+      <!-- Nodes -->
+      <rect x="10" y="65" width="120" height="50" rx="6" fill="#1a1a26" stroke="#7c3aed" stroke-width="1.5"/>
+      <text x="70" y="87" text-anchor="middle" fill="#c084fc" font-size="10">PERCEIVE</text>
+      <text x="70" y="102" text-anchor="middle" fill="#94a3b8" font-size="9">Input / Context</text>
+
+      <rect x="170" y="65" width="120" height="50" rx="6" fill="#1a1a26" stroke="#06b6d4" stroke-width="1.5"/>
+      <text x="230" y="87" text-anchor="middle" fill="#67e8f9" font-size="10">REASON</text>
+      <text x="230" y="102" text-anchor="middle" fill="#94a3b8" font-size="9">LLM Inference</text>
+
+      <rect x="330" y="65" width="120" height="50" rx="6" fill="#1a1a26" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="390" y="87" text-anchor="middle" fill="#fcd34d" font-size="10">PLAN</text>
+      <text x="390" y="102" text-anchor="middle" fill="#94a3b8" font-size="9">Choose Action</text>
+
+      <rect x="490" y="65" width="120" height="50" rx="6" fill="#1a1a26" stroke="#10b981" stroke-width="1.5"/>
+      <text x="550" y="87" text-anchor="middle" fill="#6ee7b7" font-size="10">ACT</text>
+      <text x="550" y="102" text-anchor="middle" fill="#94a3b8" font-size="9">Call Tool / API</text>
+
+      <rect x="650" y="65" width="130" height="50" rx="6" fill="#1a1a26" stroke="#ec4899" stroke-width="1.5"/>
+      <text x="715" y="87" text-anchor="middle" fill="#f9a8d4" font-size="10">OBSERVE</text>
+      <text x="715" y="102" text-anchor="middle" fill="#94a3b8" font-size="9">Result / Memory</text>
+
+      <!-- Arrows forward -->
+      <path d="M130 90 L167 90" stroke="#2a2a3e" stroke-width="2" marker-end="url(#arr)"/>
+      <path d="M290 90 L327 90" stroke="#2a2a3e" stroke-width="2" marker-end="url(#arr)"/>
+      <path d="M450 90 L487 90" stroke="#2a2a3e" stroke-width="2" marker-end="url(#arr)"/>
+      <path d="M610 90 L647 90" stroke="#2a2a3e" stroke-width="2" marker-end="url(#arr)"/>
+
+      <!-- Loop back arrow -->
+      <path d="M715 115 Q715 155 390 155 Q65 155 70 115" fill="none" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr2)"/>
+      <text x="390" y="170" text-anchor="middle" fill="#7c3aed" font-size="9">loop until goal achieved</text>
+
+      <!-- Goal achieved exit -->
+      <path d="M780 90 L810 90" stroke="#10b981" stroke-width="2" marker-end="url(#arr3)"/>
+      <text x="820" y="85" fill="#6ee7b7" font-size="9">DONE</text>
+
+      <defs>
+        <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#2a2a3e"/>
+        </marker>
+        <marker id="arr2" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#7c3aed"/>
+        </marker>
+        <marker id="arr3" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#10b981"/>
+        </marker>
+      </defs>
+    </svg>
+  </div>
+
+  <div class="card-grid">
+    <div class="card purple">
+      <span class="card-icon">🧠</span>
+      <h3>LLM as the Brain</h3>
+      <p>The language model does reasoning, planning, and decision-making. It reads context and decides what action to take next, or if the goal has been reached.</p>
+    </div>
+    <div class="card cyan">
+      <span class="card-icon">🔧</span>
+      <h3>Tools / Actions</h3>
+      <p>Agents can call external tools — web search, databases, APIs, code execution, file I/O — to get information and cause effects in the real world.</p>
+    </div>
+    <div class="card amber">
+      <span class="card-icon">💾</span>
+      <h3>Memory</h3>
+      <p>Agents maintain state across turns: short-term (context window), working memory, long-term (vector DB / database), and episodic/procedural stores.</p>
+    </div>
+    <div class="card green">
+      <span class="card-icon">🎯</span>
+      <h3>Goal / Task</h3>
+      <p>Agents are driven by a goal or objective. This can be explicit ("book a flight") or implicit (a system prompt defining an assistant's purpose).</p>
+    </div>
+    <div class="card red">
+      <span class="card-icon">🔄</span>
+      <h3>Autonomy</h3>
+      <p>Unlike one-shot prompts, agents decide independently how many steps to take and which tools to use, looping until the task is complete or impossible.</p>
+    </div>
+    <div class="card pink">
+      <span class="card-icon">👁️</span>
+      <h3>Environment</h3>
+      <p>The environment is everything the agent can observe: chat history, tool outputs, databases, APIs, files, and other agents' messages.</p>
+    </div>
+  </div>
+
+  <div class="callout">
+    <p><strong>Key mental model:</strong> Think of the LLM as a very smart CPU — it can only "run" one instruction at a time. The agent loop is the operating system scheduling work, storing results in memory, and calling I/O (tools) as needed.</p>
+  </div>
+
+  <h4>Agents vs. Chains vs. Simple Prompts</h4>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Type</th><th>Control Flow</th><th>Tool Use</th><th>State</th><th>Autonomy</th></tr>
+      <tr><td><strong>Simple Prompt</strong></td><td>Single call</td><td>None</td><td>None</td><td>None</td></tr>
+      <tr><td><strong>Chain / Pipeline</strong></td><td>Predefined DAG</td><td>Optional</td><td>Passed manually</td><td>Low</td></tr>
+      <tr><td><strong>Agent</strong></td><td>LLM decides at runtime</td><td>Yes — dynamic</td><td>Maintained</td><td>High</td></tr>
+    </table>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- SECTION 2: MEMORY & TOOLS -->
+<!-- ═══════════════════════════════════════════════════ -->
+<section class="section" id="memory">
+  <div class="section-header">
+    <span class="section-num">// 02</span>
+    <h2>Memory &amp; Tools via API</h2>
+  </div>
+
+  <h4>Memory Architecture</h4>
+
+  <div class="diagram">
+    <div class="diagram-title">Memory Types in an Agent System</div>
+    <svg viewBox="0 0 760 220" width="100%" style="max-width:760px;display:block;margin:0 auto;">
+      <!-- In-Context -->
+      <rect x="10" y="20" width="165" height="180" rx="6" fill="#12121a" stroke="#7c3aed" stroke-width="1.5"/>
+      <text x="92" y="42" text-anchor="middle" fill="#c084fc" font-size="10" font-weight="bold">IN-CONTEXT</text>
+      <text x="92" y="56" text-anchor="middle" fill="#64748b" font-size="9">(Short-Term)</text>
+      <rect x="22" y="66" width="141" height="24" rx="3" fill="#1a1a26" stroke="#2a2a3e"/>
+      <text x="92" y="83" text-anchor="middle" fill="#94a3b8" font-size="9">System Prompt</text>
+      <rect x="22" y="96" width="141" height="24" rx="3" fill="#1a1a26" stroke="#2a2a3e"/>
+      <text x="92" y="113" text-anchor="middle" fill="#94a3b8" font-size="9">Conversation History</text>
+      <rect x="22" y="126" width="141" height="24" rx="3" fill="#1a1a26" stroke="#2a2a3e"/>
+      <text x="92" y="143" text-anchor="middle" fill="#94a3b8" font-size="9">Tool Results (scratchpad)</text>
+      <rect x="22" y="156" width="141" height="24" rx="3" fill="#1a1a26" stroke="#2a2a3e"/>
+      <text x="92" y="173" text-anchor="middle" fill="#94a3b8" font-size="9">Retrieved Docs (RAG)</text>
+
+      <!-- External -->
+      <rect x="200" y="20" width="165" height="180" rx="6" fill="#12121a" stroke="#06b6d4" stroke-width="1.5"/>
+      <text x="282" y="42" text-anchor="middle" fill="#67e8f9" font-size="10" font-weight="bold">EXTERNAL</text>
+      <text x="282" y="56" text-anchor="middle" fill="#64748b" font-size="9">(Long-Term)</text>
+      <rect x="212" y="66" width="141" height="24" rx="3" fill="#1a1a26" stroke="#2a2a3e"/>
+      <text x="282" y="83" text-anchor="middle" fill="#94a3b8" font-size="9">Vector DB (semantic)</text>
+      <rect x="212" y="96" width="141" height="24" rx="3" fill="#1a1a26" stroke="#2a2a3e"/>
+      <text x="282" y="113" text-anchor="middle" fill="#94a3b8" font-size="9">SQL / NoSQL DB</text>
+      <rect x="212" y="126" width="141" height="24" rx="3" fill="#1a1a26" stroke="#2a2a3e"/>
+      <text x="282" y="143" text-anchor="middle" fill="#94a3b8" font-size="9">Key-Value Cache</text>
+      <rect x="212" y="156" width="141" height="24" rx="3" fill="#1a1a26" stroke="#2a2a3e"/>
+      <text x="282" y="173" text-anchor="middle" fill="#94a3b8" font-size="9">File / Object Store</text>
+
+      <!-- Episodic -->
+      <rect x="390" y="20" width="165" height="105" rx="6" fill="#12121a" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="472" y="42" text-anchor="middle" fill="#fcd34d" font-size="10" font-weight="bold">EPISODIC</text>
+      <text x="472" y="56" text-anchor="middle" fill="#64748b" font-size="9">(Past Experiences)</text>
+      <rect x="402" y="66" width="141" height="24" rx="3" fill="#1a1a26" stroke="#2a2a3e"/>
+      <text x="472" y="83" text-anchor="middle" fill="#94a3b8" font-size="9">Past task summaries</text>
+      <rect x="402" y="96" width="141" height="24" rx="3" fill="#1a1a26" stroke="#2a2a3e"/>
+      <text x="472" y="113" text-anchor="middle" fill="#94a3b8" font-size="9">User preference logs</text>
+
+      <!-- Procedural -->
+      <rect x="390" y="140" width="165" height="60" rx="6" fill="#12121a" stroke="#10b981" stroke-width="1.5"/>
+      <text x="472" y="162" text-anchor="middle" fill="#6ee7b7" font-size="10" font-weight="bold">PROCEDURAL</text>
+      <rect x="402" y="172" width="141" height="20" rx="3" fill="#1a1a26" stroke="#2a2a3e"/>
+      <text x="472" y="186" text-anchor="middle" fill="#94a3b8" font-size="9">Tools, code, skills</text>
+
+      <!-- LLM box -->
+      <rect x="580" y="60" width="165" height="100" rx="6" fill="#1a1a26" stroke="#ec4899" stroke-width="2"/>
+      <text x="662" y="85" text-anchor="middle" fill="#f9a8d4" font-size="11" font-weight="bold">LLM</text>
+      <text x="662" y="102" text-anchor="middle" fill="#64748b" font-size="9">Context Window</text>
+      <text x="662" y="117" text-anchor="middle" fill="#64748b" font-size="9">128k – 1M tokens</text>
+      <text x="662" y="132" text-anchor="middle" fill="#ec4899" font-size="9">↑ all memory flows here</text>
+
+      <!-- Arrows to LLM -->
+      <path d="M175 110 L578 110" fill="none" stroke="#7c3aed" stroke-width="1" stroke-dasharray="4,2" marker-end="url(#a1)"/>
+      <path d="M365 110 L578 110" fill="none" stroke="#06b6d4" stroke-width="1" stroke-dasharray="4,2" marker-end="url(#a1)"/>
+      <path d="M555 110 L578 110" fill="none" stroke="#f59e0b" stroke-width="1" stroke-dasharray="4,2" marker-end="url(#a1)"/>
+
+      <defs>
+        <marker id="a1" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
+          <path d="M0,0 L5,2.5 L0,5 Z" fill="#64748b"/>
+        </marker>
+      </defs>
+    </svg>
+  </div>
+
+  <h4>Short-Term Memory: Managing the Context Window</h4>
+  <pre><code><span class="cm"># Short-term memory = the messages array sent to the API</span>
+<span class="cm"># Strategies: sliding window, summarization, priority pruning</span>
+
+<span class="kw">import</span> anthropic
+<span class="kw">from</span> collections <span class="kw">import</span> deque
+
+client = anthropic.<span class="cls">Anthropic</span>()
+
+<span class="kw">class</span> <span class="cls">ShortTermMemory</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="var">self</span>, max_turns=<span class="num">20</span>, summarize_at=<span class="num">15</span>):
+        <span class="var">self</span>.history = deque(maxlen=max_turns)
+        <span class="var">self</span>.summarize_at = summarize_at
+        <span class="var">self</span>.summary = <span class="str">""</span>
+
+    <span class="kw">def</span> <span class="fn">add</span>(<span class="var">self</span>, role, content):
+        <span class="var">self</span>.history.append({<span class="str">"role"</span>: role, <span class="str">"content"</span>: content})
+        <span class="kw">if</span> len(<span class="var">self</span>.history) >= <span class="var">self</span>.summarize_at:
+            <span class="var">self</span>.<span class="fn">_compress</span>()
+
+    <span class="kw">def</span> <span class="fn">_compress</span>(<span class="var">self</span>):
+        <span class="cm"># Summarize old turns to free context space</span>
+        old = list(<span class="var">self</span>.history)[:<span class="num">10</span>]
+        prompt = <span class="str">f"Summarize this conversation: {old}"</span>
+        r = client.messages.<span class="fn">create</span>(
+            model=<span class="str">"claude-opus-4-5"</span>, max_tokens=<span class="num">500</span>,
+            messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: prompt}]
+        )
+        <span class="var">self</span>.summary += r.content[<span class="num">0</span>].text + <span class="str">"\n"</span>
+        <span class="kw">for</span> _ <span class="kw">in</span> range(<span class="num">10</span>):
+            <span class="var">self</span>.history.popleft()
+
+    <span class="kw">def</span> <span class="fn">get_messages</span>(<span class="var">self</span>):
+        msgs = list(<span class="var">self</span>.history)
+        <span class="kw">if</span> <span class="var">self</span>.summary:
+            <span class="cm"># Prepend summary as context</span>
+            msgs.insert(<span class="num">0</span>, {
+                <span class="str">"role"</span>: <span class="str">"user"</span>,
+                <span class="str">"content"</span>: <span class="str">f"[Prior context]: {self.summary}"</span>
+            })
+        <span class="kw">return</span> msgs</code></pre>
+
+  <h4>Long-Term Memory: Vector Database (RAG)</h4>
+  <pre><code><span class="code-label">Python · Long-Term Memory with Vector DB</span><span class="kw">import</span> anthropic
+<span class="kw">from</span> sentence_transformers <span class="kw">import</span> SentenceTransformer
+<span class="kw">import</span> chromadb
+
+client = anthropic.<span class="cls">Anthropic</span>()
+embed_model = <span class="cls">SentenceTransformer</span>(<span class="str">"all-MiniLM-L6-v2"</span>)
+chroma = chromadb.<span class="cls">Client</span>()
+collection = chroma.get_or_create_collection(<span class="str">"agent_memory"</span>)
+
+<span class="kw">def</span> <span class="fn">save_to_longterm</span>(content: str, metadata: dict):
+    embedding = embed_model.encode(content).tolist()
+    collection.add(
+        documents=[content],
+        embeddings=[embedding],
+        metadatas=[metadata],
+        ids=[<span class="str">f"mem_{hash(content)}"</span>]
+    )
+
+<span class="kw">def</span> <span class="fn">retrieve_relevant</span>(query: str, n_results=<span class="num">5</span>) -> list[str]:
+    query_embed = embed_model.encode(query).tolist()
+    results = collection.query(
+        query_embeddings=[query_embed],
+        n_results=n_results
+    )
+    <span class="kw">return</span> results[<span class="str">"documents"</span>][<span class="num">0</span>]
+
+<span class="kw">def</span> <span class="fn">agent_with_memory</span>(user_query: str, stm: <span class="cls">ShortTermMemory</span>):
+    <span class="cm"># Pull relevant memories into context</span>
+    memories = <span class="fn">retrieve_relevant</span>(user_query)
+    memory_ctx = <span class="str">"\n"</span>.join(memories)
+    
+    stm.<span class="fn">add</span>(<span class="str">"user"</span>, user_query)
+    
+    response = client.messages.<span class="fn">create</span>(
+        model=<span class="str">"claude-opus-4-5"</span>,
+        max_tokens=<span class="num">1024</span>,
+        system=<span class="str">f"You are a helpful agent.\n\nLong-term memories:\n{memory_ctx}"</span>,
+        messages=stm.<span class="fn">get_messages</span>()
+    )
+    
+    answer = response.content[<span class="num">0</span>].text
+    stm.<span class="fn">add</span>(<span class="str">"assistant"</span>, answer)
+    <span class="fn">save_to_longterm</span>(user_query + <span class="str">" → "</span> + answer, {<span class="str">"type"</span>: <span class="str">"qa"</span>})
+    <span class="kw">return</span> answer</code></pre>
+
+  <h4>Defining and Using Tools</h4>
+  <pre><code><span class="code-label">Python · Tool Definitions + Agent Loop</span><span class="kw">import</span> anthropic, json, requests
+
+client = anthropic.<span class="cls">Anthropic</span>()
+
+<span class="cm"># Tool schemas — Claude will decide when/how to call these</span>
+TOOLS = [
+    {
+        <span class="str">"name"</span>: <span class="str">"web_search"</span>,
+        <span class="str">"description"</span>: <span class="str">"Search the web for current information."</span>,
+        <span class="str">"input_schema"</span>: {
+            <span class="str">"type"</span>: <span class="str">"object"</span>,
+            <span class="str">"properties"</span>: {
+                <span class="str">"query"</span>: {<span class="str">"type"</span>: <span class="str">"string"</span>, <span class="str">"description"</span>: <span class="str">"Search query"</span>}
+            },
+            <span class="str">"required"</span>: [<span class="str">"query"</span>]
+        }
+    },
+    {
+        <span class="str">"name"</span>: <span class="str">"calculate"</span>,
+        <span class="str">"description"</span>: <span class="str">"Evaluate a mathematical expression."</span>,
+        <span class="str">"input_schema"</span>: {
+            <span class="str">"type"</span>: <span class="str">"object"</span>,
+            <span class="str">"properties"</span>: {
+                <span class="str">"expression"</span>: {<span class="str">"type"</span>: <span class="str">"string"</span>, <span class="str">"description"</span>: <span class="str">"Math expression"</span>}
+            },
+            <span class="str">"required"</span>: [<span class="str">"expression"</span>]
+        }
+    },
+    {
+        <span class="str">"name"</span>: <span class="str">"write_file"</span>,
+        <span class="str">"description"</span>: <span class="str">"Write content to a file."</span>,
+        <span class="str">"input_schema"</span>: {
+            <span class="str">"type"</span>: <span class="str">"object"</span>,
+            <span class="str">"properties"</span>: {
+                <span class="str">"filename"</span>: {<span class="str">"type"</span>: <span class="str">"string"</span>},
+                <span class="str">"content"</span>: {<span class="str">"type"</span>: <span class="str">"string"</span>}
+            },
+            <span class="str">"required"</span>: [<span class="str">"filename"</span>, <span class="str">"content"</span>]
+        }
+    }
+]
+
+<span class="cm"># Tool executor — map LLM's tool call to real functions</span>
+<span class="kw">def</span> <span class="fn">execute_tool</span>(name: str, inputs: dict) -> str:
+    <span class="kw">if</span> name == <span class="str">"web_search"</span>:
+        <span class="cm"># Real impl: call SerpAPI, Tavily, etc.</span>
+        <span class="kw">return</span> <span class="str">f"[Search results for '{inputs['query']}': ...]"</span>
+    <span class="kw">elif</span> name == <span class="str">"calculate"</span>:
+        <span class="kw">return</span> str(<span class="fn">eval</span>(inputs[<span class="str">"expression"</span>]))  <span class="cm"># use safer eval in prod</span>
+    <span class="kw">elif</span> name == <span class="str">"write_file"</span>:
+        <span class="kw">with</span> open(inputs[<span class="str">"filename"</span>], <span class="str">"w"</span>) <span class="kw">as</span> f:
+            f.<span class="fn">write</span>(inputs[<span class="str">"content"</span>])
+        <span class="kw">return</span> <span class="str">f"File '{inputs['filename']}' written."</span>
+    <span class="kw">return</span> <span class="str">"Unknown tool"</span>
+
+<span class="cm"># The core agentic loop</span>
+<span class="kw">def</span> <span class="fn">run_agent</span>(task: str, max_iterations: int = <span class="num">10</span>) -> str:
+    messages = [{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: task}]
+    
+    <span class="kw">for</span> i <span class="kw">in</span> range(max_iterations):
+        response = client.messages.<span class="fn">create</span>(
+            model=<span class="str">"claude-opus-4-5"</span>,
+            max_tokens=<span class="num">4096</span>,
+            tools=TOOLS,
+            messages=messages
+        )
+        
+        <span class="cm"># Done — no more tool calls</span>
+        <span class="kw">if</span> response.stop_reason == <span class="str">"end_turn"</span>:
+            <span class="kw">return</span> response.content[<span class="num">0</span>].text
+        
+        <span class="cm"># Process tool calls</span>
+        tool_results = []
+        <span class="kw">for</span> block <span class="kw">in</span> response.content:
+            <span class="kw">if</span> block.type == <span class="str">"tool_use"</span>:
+                result = <span class="fn">execute_tool</span>(block.name, block.input)
+                tool_results.append({
+                    <span class="str">"type"</span>: <span class="str">"tool_result"</span>,
+                    <span class="str">"tool_use_id"</span>: block.id,
+                    <span class="str">"content"</span>: result
+                })
+        
+        <span class="cm"># Feed results back into context</span>
+        messages.append({<span class="str">"role"</span>: <span class="str">"assistant"</span>, <span class="str">"content"</span>: response.content})
+        messages.append({<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: tool_results})
+    
+    <span class="kw">return</span> <span class="str">"Max iterations reached"</span>
+
+<span class="cm"># Run it!</span>
+result = <span class="fn">run_agent</span>(<span class="str">"Research the current gold price, calculate how much 15oz would cost, and save the result to gold_report.txt"</span>)
+print(result)</code></pre>
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- SECTION 3: COGNITIVE ARCHITECTURES -->
+<!-- ═══════════════════════════════════════════════════ -->
+<section class="section" id="cognitive">
+  <div class="section-header">
+    <span class="section-num">// 03</span>
+    <h2>Cognitive Architectures</h2>
+  </div>
+
+  <p>A cognitive architecture defines <strong>how an agent thinks and structures its reasoning</strong>. Different architectures trade off between simplicity, quality, and computational cost.</p>
+
+  <div class="card-grid">
+    <div class="card purple">
+      <h3>ReAct</h3>
+      <p><strong>Reasoning + Acting</strong> interleaved. The agent writes a "thought" before each action, making reasoning transparent and controllable. Most common pattern.</p>
+    </div>
+    <div class="card cyan">
+      <h3>Plan-and-Execute</h3>
+      <p><strong>Planner</strong> creates a full task list upfront; <strong>Executor</strong> runs each step. Good for complex, predictable workflows. Faster per step.</p>
+    </div>
+    <div class="card amber">
+      <h3>Tree of Thought (ToT)</h3>
+      <p>Explores multiple reasoning branches in parallel. Best for problems requiring search through many possible solutions (math, planning).</p>
+    </div>
+    <div class="card green">
+      <h3>Reflexion</h3>
+      <p>Agent reflects on failures and <strong>self-improves</strong> across episodes. Stores verbal feedback to avoid repeating mistakes. Great for coding tasks.</p>
+    </div>
+    <div class="card red">
+      <h3>LATS (MCTS)</h3>
+      <p>LLM-powered <strong>Monte Carlo Tree Search</strong>. Extremely powerful for agentic search problems. Highest quality, highest cost.</p>
+    </div>
+    <div class="card pink">
+      <h3>Critic / Verifier</h3>
+      <p>A second LLM call critiques the first's output before acting. Reduces hallucinations and mistakes. Simple but effective for high-stakes tasks.</p>
+    </div>
+  </div>
+
+  <h4>ReAct Pattern (most widely used)</h4>
+  <pre><code><span class="code-label">Python · ReAct Architecture</span><span class="kw">def</span> <span class="fn">react_agent</span>(task: str):
+    <span class="cm">"""
+    ReAct loop: Thought → Action → Observation → repeat
+    The system prompt shapes the LLM to output structured thoughts.
+    """</span>
+    system = <span class="str">"""You are a ReAct agent. For each step, output:
+Thought: [your reasoning about what to do next]
+Action: [tool_name]
+Action Input: [JSON input for the tool]
+
+When done, output:
+Thought: I now have enough information.
+Final Answer: [your answer]"""</span>
+    
+    messages = [{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">f"Task: {task}"</span>}]
+    
+    <span class="kw">while True</span>:
+        resp = client.messages.<span class="fn">create</span>(
+            model=<span class="str">"claude-opus-4-5"</span>, max_tokens=<span class="num">1024</span>,
+            system=system, messages=messages,
+            stop_sequences=[<span class="str">"Observation:"</span>]  <span class="cm"># stop before observation</span>
+        )
+        output = resp.content[<span class="num">0</span>].text
+        
+        <span class="kw">if</span> <span class="str">"Final Answer:"</span> <span class="kw">in</span> output:
+            <span class="kw">return</span> output.split(<span class="str">"Final Answer:"</span>)[<span class="num">1</span>].strip()
+        
+        <span class="cm"># Parse Action + Input</span>
+        action = <span class="fn">parse_action</span>(output)
+        observation = <span class="fn">execute_tool</span>(action[<span class="str">"tool"</span>], action[<span class="str">"input"</span>])
+        
+        <span class="cm"># Append thought/action + observation to history</span>
+        messages.append({<span class="str">"role"</span>: <span class="str">"assistant"</span>, <span class="str">"content"</span>: output})
+        messages.append({<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">f"Observation: {observation}"</span>})</code></pre>
+
+  <h4>Plan-and-Execute</h4>
+  <pre><code><span class="code-label">Python · Plan-and-Execute Architecture</span><span class="kw">def</span> <span class="fn">plan_and_execute</span>(task: str):
+    <span class="cm"># Step 1: Planner generates a task list (one LLM call)</span>
+    plan_resp = client.messages.<span class="fn">create</span>(
+        model=<span class="str">"claude-opus-4-5"</span>, max_tokens=<span class="num">1024</span>,
+        system=<span class="str">"Create a numbered step-by-step plan to accomplish the task. Output JSON array."</span>,
+        messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: task}]
+    )
+    steps = json.<span class="fn">loads</span>(plan_resp.content[<span class="num">0</span>].text)
+    <span class="cm"># e.g. ["Search for X", "Summarize results", "Write report"]</span>
+    
+    context = {<span class="str">"task"</span>: task, <span class="str">"results"</span>: []}
+    
+    <span class="cm"># Step 2: Execute each step in sequence</span>
+    <span class="kw">for</span> i, step <span class="kw">in</span> enumerate(steps):
+        exec_resp = client.messages.<span class="fn">create</span>(
+            model=<span class="str">"claude-opus-4-5"</span>, max_tokens=<span class="num">2048</span>,
+            system=<span class="str">f"You are executing step {i+1}/{len(steps)}: {step}\nPrevious results: {context['results']}"</span>,
+            tools=TOOLS,
+            messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">f"Execute: {step}"</span>}]
+        )
+        <span class="cm"># ... handle tool calls, collect result ...</span>
+        context[<span class="str">"results"</span>].append({<span class="str">"step"</span>: step, <span class="str">"result"</span>: exec_resp.content[<span class="num">0</span>].text})
+    
+    <span class="kw">return</span> context</code></pre>
+
+  <div class="callout amber">
+    <p><strong>Choosing an architecture:</strong> Use <span class="hl">ReAct</span> for general-purpose agents. Use <span class="hl-amber">Plan-and-Execute</span> when tasks are highly structured. Use <span class="hl-green">Reflexion</span> for iterative improvement (coding, writing). Use <span class="hl-purple">ToT/LATS</span> for reasoning-heavy problems where cost is acceptable.</p>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- SECTION 4: FRAMEWORKS -->
+<!-- ═══════════════════════════════════════════════════ -->
+<section class="section" id="frameworks">
+  <div class="section-header">
+    <span class="section-num">// 04</span>
+    <h2>Frameworks &amp; Building Alternatives</h2>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <tr>
+        <th>Framework</th>
+        <th>Language</th>
+        <th>Best For</th>
+        <th>Multi-Agent</th>
+        <th>Learning Curve</th>
+        <th>Abstraction</th>
+      </tr>
+      <tr>
+        <td><strong>LangChain</strong></td>
+        <td>Python / JS</td>
+        <td>General purpose, rich ecosystem</td>
+        <td><span class="tag tag-green">Yes (LangGraph)</span></td>
+        <td><span class="tag tag-amber">Medium</span></td>
+        <td><span class="tag tag-amber">High</span></td>
+      </tr>
+      <tr>
+        <td><strong>LangGraph</strong></td>
+        <td>Python / JS</td>
+        <td>Complex stateful workflows, graphs</td>
+        <td><span class="tag tag-green">Yes</span></td>
+        <td><span class="tag tag-red">High</span></td>
+        <td><span class="tag tag-amber">Medium</span></td>
+      </tr>
+      <tr>
+        <td><strong>AutoGen</strong></td>
+        <td>Python</td>
+        <td>Multi-agent conversations, Microsoft stack</td>
+        <td><span class="tag tag-green">Native</span></td>
+        <td><span class="tag tag-amber">Medium</span></td>
+        <td><span class="tag tag-green">High</span></td>
+      </tr>
+      <tr>
+        <td><strong>CrewAI</strong></td>
+        <td>Python</td>
+        <td>Role-based multi-agent crews</td>
+        <td><span class="tag tag-green">Native</span></td>
+        <td><span class="tag tag-green">Low</span></td>
+        <td><span class="tag tag-green">Very High</span></td>
+      </tr>
+      <tr>
+        <td><strong>OpenAI Agents SDK</strong></td>
+        <td>Python</td>
+        <td>Handoffs, guardrails, tracing</td>
+        <td><span class="tag tag-green">Yes (Handoffs)</span></td>
+        <td><span class="tag tag-green">Low</span></td>
+        <td><span class="tag tag-green">High</span></td>
+      </tr>
+      <tr>
+        <td><strong>Llama Index</strong></td>
+        <td>Python / TS</td>
+        <td>RAG-heavy agents, data connectors</td>
+        <td><span class="tag tag-amber">Limited</span></td>
+        <td><span class="tag tag-amber">Medium</span></td>
+        <td><span class="tag tag-amber">High</span></td>
+      </tr>
+      <tr>
+        <td><strong>Raw API</strong></td>
+        <td>Any</td>
+        <td>Full control, production systems</td>
+        <td><span class="tag tag-blue">Manual</span></td>
+        <td><span class="tag tag-purple">Lowest</span></td>
+        <td><span class="tag tag-red">None</span></td>
+      </tr>
+      <tr>
+        <td><strong>Semantic Kernel</strong></td>
+        <td>Python / C# / Java</td>
+        <td>Enterprise, Microsoft stack</td>
+        <td><span class="tag tag-green">Yes</span></td>
+        <td><span class="tag tag-amber">Medium</span></td>
+        <td><span class="tag tag-amber">High</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <h4>CrewAI: Simplest Multi-Agent Setup</h4>
+  <pre><code><span class="code-label">Python · CrewAI example</span><span class="kw">from</span> crewai <span class="kw">import</span> Agent, Task, Crew, Process
+<span class="kw">from</span> crewai_tools <span class="kw">import</span> SerperDevTool
+
+search_tool = <span class="cls">SerperDevTool</span>()
+
+researcher = <span class="cls">Agent</span>(
+    role=<span class="str">"Research Analyst"</span>,
+    goal=<span class="str">"Find and summarize the latest AI news"</span>,
+    backstory=<span class="str">"Expert at finding and synthesizing information from the web"</span>,
+    tools=[search_tool],
+    llm=<span class="str">"claude-opus-4-5"</span>
+)
+
+writer = <span class="cls">Agent</span>(
+    role=<span class="str">"Tech Writer"</span>,
+    goal=<span class="str">"Write engaging articles based on research"</span>,
+    backstory=<span class="str">"Experienced at turning research into compelling narratives"</span>,
+    llm=<span class="str">"claude-opus-4-5"</span>
+)
+
+task1 = <span class="cls">Task</span>(
+    description=<span class="str">"Research top 5 AI developments this week"</span>,
+    expected_output=<span class="str">"Bullet list of 5 developments with sources"</span>,
+    agent=researcher
+)
+
+task2 = <span class="cls">Task</span>(
+    description=<span class="str">"Write a 500-word article based on the research"</span>,
+    expected_output=<span class="str">"Well-formatted markdown article"</span>,
+    agent=writer,
+    context=[task1]  <span class="cm"># task2 receives task1's output</span>
+)
+
+crew = <span class="cls">Crew</span>(
+    agents=[researcher, writer],
+    tasks=[task1, task2],
+    process=Process.sequential
+)
+
+result = crew.<span class="fn">kickoff</span>()</code></pre>
+
+  <h4>LangGraph: Stateful Graph-Based Agent</h4>
+  <pre><code><span class="code-label">Python · LangGraph stateful agent</span><span class="kw">from</span> langgraph.graph <span class="kw">import</span> StateGraph, END
+<span class="kw">from</span> typing <span class="kw">import</span> TypedDict, Annotated
+<span class="kw">import</span> operator
+
+<span class="kw">class</span> <span class="cls">AgentState</span>(TypedDict):
+    messages: Annotated[list, operator.add]
+    tool_calls: list
+    final_answer: str
+
+<span class="kw">def</span> <span class="fn">call_llm</span>(state: <span class="cls">AgentState</span>):
+    response = client.messages.<span class="fn">create</span>(
+        model=<span class="str">"claude-opus-4-5"</span>, max_tokens=<span class="num">1024</span>,
+        tools=TOOLS, messages=state[<span class="str">"messages"</span>]
+    )
+    <span class="kw">return</span> {<span class="str">"messages"</span>: [response], <span class="str">"tool_calls"</span>: response.content}
+
+<span class="kw">def</span> <span class="fn">run_tools</span>(state: <span class="cls">AgentState</span>):
+    results = []
+    <span class="kw">for</span> block <span class="kw">in</span> state[<span class="str">"tool_calls"</span>]:
+        <span class="kw">if</span> hasattr(block, <span class="str">"name"</span>):
+            result = <span class="fn">execute_tool</span>(block.name, block.input)
+            results.append({<span class="str">"tool_use_id"</span>: block.id, <span class="str">"content"</span>: result})
+    <span class="kw">return</span> {<span class="str">"messages"</span>: [{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: results}]}
+
+<span class="kw">def</span> <span class="fn">should_continue</span>(state: <span class="cls">AgentState</span>):
+    last = state[<span class="str">"messages"</span>][-<span class="num">1</span>]
+    <span class="kw">if</span> last.stop_reason == <span class="str">"end_turn"</span>:
+        <span class="kw">return</span> <span class="str">"end"</span>
+    <span class="kw">return</span> <span class="str">"tools"</span>
+
+graph = <span class="cls">StateGraph</span>(<span class="cls">AgentState</span>)
+graph.<span class="fn">add_node</span>(<span class="str">"llm"</span>, call_llm)
+graph.<span class="fn">add_node</span>(<span class="str">"tools"</span>, run_tools)
+graph.<span class="fn">set_entry_point</span>(<span class="str">"llm"</span>)
+graph.<span class="fn">add_conditional_edges</span>(<span class="str">"llm"</span>, should_continue, {<span class="str">"tools"</span>: <span class="str">"tools"</span>, <span class="str">"end"</span>: END})
+graph.<span class="fn">add_edge</span>(<span class="str">"tools"</span>, <span class="str">"llm"</span>)
+agent = graph.<span class="fn">compile</span>()</code></pre>
+
+  <div class="callout cyan">
+    <p><strong>When to use raw API:</strong> For production systems, raw API gives you precise control over costs, latency, and behavior. Use frameworks to prototype quickly; migrate to direct API calls for performance-critical paths.</p>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- SECTION 5: MULTI-AGENT -->
+<!-- ═══════════════════════════════════════════════════ -->
+<section class="section" id="multiagent">
+  <div class="section-header">
+    <span class="section-num">// 05</span>
+    <h2>Multi-Agent Architectures</h2>
+  </div>
+
+  <p>Single agents hit limits: <strong>context window size, specialization, parallelism, and reliability</strong>. Multi-agent systems solve this by distributing work across specialized agents that communicate.</p>
+
+  <div class="diagram">
+    <div class="diagram-title">Multi-Agent Topology Patterns</div>
+    <svg viewBox="0 0 780 320" width="100%" style="max-width:780px;display:block;margin:0 auto;">
+      <!-- ORCHESTRATOR-WORKER -->
+      <text x="130" y="20" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="bold">ORCHESTRATOR-WORKER</text>
+      <rect x="90" y="30" width="80" height="36" rx="5" fill="#1a1a26" stroke="#7c3aed" stroke-width="1.5"/>
+      <text x="130" y="53" text-anchor="middle" fill="#c084fc" font-size="9">Orchestrator</text>
+      <rect x="10" y="110" width="70" height="30" rx="4" fill="#1a1a26" stroke="#2a2a3e"/>
+      <text x="45" y="130" text-anchor="middle" fill="#94a3b8" font-size="8">Worker A</text>
+      <rect x="95" y="110" width="70" height="30" rx="4" fill="#1a1a26" stroke="#2a2a3e"/>
+      <text x="130" y="130" text-anchor="middle" fill="#94a3b8" font-size="8">Worker B</text>
+      <rect x="180" y="110" width="70" height="30" rx="4" fill="#1a1a26" stroke="#2a2a3e"/>
+      <text x="215" y="130" text-anchor="middle" fill="#94a3b8" font-size="8">Worker C</text>
+      <path d="M130 66 L45 110" stroke="#7c3aed" stroke-width="1" stroke-dasharray="4,2"/>
+      <path d="M130 66 L130 110" stroke="#7c3aed" stroke-width="1" stroke-dasharray="4,2"/>
+      <path d="M130 66 L215 110" stroke="#7c3aed" stroke-width="1" stroke-dasharray="4,2"/>
+
+      <!-- PIPELINE -->
+      <text x="430" y="20" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="bold">PIPELINE (SEQUENTIAL)</text>
+      <rect x="300" y="30" width="70" height="30" rx="4" fill="#1a1a26" stroke="#06b6d4" stroke-width="1.5"/>
+      <text x="335" y="50" text-anchor="middle" fill="#67e8f9" font-size="8">Agent 1</text>
+      <path d="M370 45 L390 45" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#ma1)"/>
+      <rect x="390" y="30" width="70" height="30" rx="4" fill="#1a1a26" stroke="#06b6d4" stroke-width="1.5"/>
+      <text x="425" y="50" text-anchor="middle" fill="#67e8f9" font-size="8">Agent 2</text>
+      <path d="M460 45 L480 45" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#ma1)"/>
+      <rect x="480" y="30" width="70" height="30" rx="4" fill="#1a1a26" stroke="#06b6d4" stroke-width="1.5"/>
+      <text x="515" y="50" text-anchor="middle" fill="#67e8f9" font-size="8">Agent 3</text>
+
+      <!-- PEER-TO-PEER -->
+      <text x="680" y="20" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="bold">PEER-TO-PEER</text>
+      <rect x="640" y="30" width="60" height="28" rx="4" fill="#1a1a26" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="670" y="48" text-anchor="middle" fill="#fcd34d" font-size="8">Agent A</text>
+      <rect x="720" y="75" width="60" height="28" rx="4" fill="#1a1a26" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="750" y="93" text-anchor="middle" fill="#fcd34d" font-size="8">Agent B</text>
+      <rect x="640" y="120" width="60" height="28" rx="4" fill="#1a1a26" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="670" y="138" text-anchor="middle" fill="#fcd34d" font-size="8">Agent C</text>
+      <path d="M700 44 L720 78" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3,2"/>
+      <path d="M750 103 L720 120" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3,2"/>
+      <path d="M670 58 L670 120" stroke="#f59e0b" stroke-width="1" stroke-dasharray="3,2"/>
+
+      <!-- DEBATE / CRITIC -->
+      <text x="130" y="185" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="bold">DEBATE / CRITIC</text>
+      <rect x="60" y="195" width="70" height="30" rx="4" fill="#1a1a26" stroke="#ec4899" stroke-width="1.5"/>
+      <text x="95" y="215" text-anchor="middle" fill="#f9a8d4" font-size="8">Generator</text>
+      <path d="M130 210 L158 210" stroke="#64748b" stroke-width="1.5" marker-end="url(#ma2)"/>
+      <rect x="160" y="195" width="70" height="30" rx="4" fill="#1a1a26" stroke="#ec4899" stroke-width="1.5"/>
+      <text x="195" y="215" text-anchor="middle" fill="#f9a8d4" font-size="8">Critic</text>
+      <path d="M195 225 Q195 260 130 260 Q65 260 95 225" fill="none" stroke="#ec4899" stroke-width="1" stroke-dasharray="4,2" marker-end="url(#ma2)"/>
+      <text x="145" y="272" text-anchor="middle" fill="#ec4899" font-size="8">feedback loop</text>
+
+      <!-- HIERARCHICAL -->
+      <text x="470" y="185" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="bold">HIERARCHICAL</text>
+      <rect x="435" y="195" width="70" height="28" rx="4" fill="#1a1a26" stroke="#10b981" stroke-width="1.5"/>
+      <text x="470" y="213" text-anchor="middle" fill="#6ee7b7" font-size="8">Manager</text>
+      <rect x="335" y="250" width="65" height="26" rx="4" fill="#1a1a26" stroke="#2a2a3e"/>
+      <text x="367" y="267" text-anchor="middle" fill="#94a3b8" font-size="8">Sub-mgr A</text>
+      <rect x="415" y="250" width="65" height="26" rx="4" fill="#1a1a26" stroke="#2a2a3e"/>
+      <text x="447" y="267" text-anchor="middle" fill="#94a3b8" font-size="8">Sub-mgr B</text>
+      <rect x="305" y="300" width="55" height="18" rx="3" fill="#1a1a26" stroke="#1a1a26"/>
+      <text x="332" y="313" text-anchor="middle" fill="#64748b" font-size="7">Worker</text>
+      <rect x="370" y="300" width="55" height="18" rx="3" fill="#1a1a26" stroke="#1a1a26"/>
+      <text x="397" y="313" text-anchor="middle" fill="#64748b" font-size="7">Worker</text>
+      <rect x="440" y="300" width="55" height="18" rx="3" fill="#1a1a26" stroke="#1a1a26"/>
+      <text x="467" y="313" text-anchor="middle" fill="#64748b" font-size="7">Worker</text>
+      <path d="M470 223 L367 250" stroke="#10b981" stroke-width="1"/>
+      <path d="M470 223 L447 250" stroke="#10b981" stroke-width="1"/>
+      <path d="M367 276 L332 300" stroke="#2a2a3e" stroke-width="1"/>
+      <path d="M367 276 L397 300" stroke="#2a2a3e" stroke-width="1"/>
+      <path d="M447 276 L467 300" stroke="#2a2a3e" stroke-width="1"/>
+
+      <defs>
+        <marker id="ma1" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#06b6d4"/>
+        </marker>
+        <marker id="ma2" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#ec4899"/>
+        </marker>
+      </defs>
+    </svg>
+  </div>
+
+  <h4>Orchestrator-Worker Pattern (most common production pattern)</h4>
+  <pre><code><span class="code-label">Python · Orchestrator-Worker Multi-Agent</span><span class="kw">class</span> <span class="cls">OrchestratorAgent</span>:
+    <span class="kw">def</span> <span class="fn">run</span>(<span class="var">self</span>, task: str) -> str:
+        <span class="cm"># Orchestrator decides which workers to call</span>
+        plan = <span class="var">self</span>.<span class="fn">_plan_subtasks</span>(task)
+        results = {}
+        
+        <span class="kw">for</span> subtask <span class="kw">in</span> plan:
+            worker = WORKER_REGISTRY[subtask[<span class="str">"agent"</span>]]
+            results[subtask[<span class="str">"id"</span>]] = worker.<span class="fn">execute</span>(
+                task=subtask[<span class="str">"task"</span>],
+                context={k: results[k] <span class="kw">for</span> k <span class="kw">in</span> subtask.get(<span class="str">"depends_on"</span>, [])}
+            )
+        
+        <span class="kw">return</span> <span class="var">self</span>.<span class="fn">_synthesize</span>(task, results)
+
+    <span class="kw">def</span> <span class="fn">_plan_subtasks</span>(<span class="var">self</span>, task: str) -> list:
+        resp = client.messages.<span class="fn">create</span>(
+            model=<span class="str">"claude-opus-4-5"</span>, max_tokens=<span class="num">1024</span>,
+            system=<span class="str">"""You are an orchestrator. Decompose tasks into subtasks.
+Available agents: researcher, coder, writer, critic, data_analyst.
+Return JSON: [{"id":"t1","agent":"researcher","task":"...","depends_on":[]}]"""</span>,
+            messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: task}]
+        )
+        <span class="kw">return</span> json.<span class="fn">loads</span>(resp.content[<span class="num">0</span>].text)
+
+<span class="kw">class</span> <span class="cls">ResearcherAgent</span>:
+    <span class="kw">def</span> <span class="fn">execute</span>(<span class="var">self</span>, task: str, context: dict) -> str:
+        <span class="cm"># Specialized: only uses search tools</span>
+        <span class="kw">return</span> <span class="fn">run_agent</span>(task, tools=[search_tool])
+
+<span class="kw">class</span> <span class="cls">CoderAgent</span>:
+    <span class="kw">def</span> <span class="fn">execute</span>(<span class="var">self</span>, task: str, context: dict) -> str:
+        <span class="cm"># Specialized: only uses code execution tools</span>
+        <span class="kw">return</span> <span class="fn">run_agent</span>(task, tools=[python_repl_tool, file_tool])
+
+WORKER_REGISTRY = {
+    <span class="str">"researcher"</span>: <span class="cls">ResearcherAgent</span>(),
+    <span class="str">"coder"</span>: <span class="cls">CoderAgent</span>(),
+}</code></pre>
+
+  <h4>Agent Communication: A2A Protocol</h4>
+  <pre><code><span class="code-label">Python · Agent-to-Agent communication via shared message bus</span><span class="kw">import</span> asyncio
+<span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass
+
+@dataclass
+<span class="kw">class</span> <span class="cls">AgentMessage</span>:
+    sender: str
+    receiver: str     <span class="cm"># or "broadcast"</span>
+    content: str
+    message_type: str <span class="cm"># "task" | "result" | "query" | "error"</span>
+
+<span class="kw">class</span> <span class="cls">MessageBus</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="var">self</span>):
+        <span class="var">self</span>.queues: dict[str, asyncio.Queue] = {}
+    
+    <span class="kw">def</span> <span class="fn">register</span>(<span class="var">self</span>, agent_id: str):
+        <span class="var">self</span>.queues[agent_id] = asyncio.Queue()
+    
+    <span class="kw">async def</span> <span class="fn">send</span>(<span class="var">self</span>, msg: <span class="cls">AgentMessage</span>):
+        <span class="kw">if</span> msg.receiver == <span class="str">"broadcast"</span>:
+            <span class="kw">for</span> q <span class="kw">in</span> <span class="var">self</span>.queues.values():
+                <span class="kw">await</span> q.<span class="fn">put</span>(msg)
+        <span class="kw">else</span>:
+            <span class="kw">await</span> <span class="var">self</span>.queues[msg.receiver].<span class="fn">put</span>(msg)
+    
+    <span class="kw">async def</span> <span class="fn">receive</span>(<span class="var">self</span>, agent_id: str) -> <span class="cls">AgentMessage</span>:
+        <span class="kw">return await</span> <span class="var">self</span>.queues[agent_id].<span class="fn">get</span>()
+
+bus = <span class="cls">MessageBus</span>()
+<span class="cm"># Agents communicate asynchronously via the bus</span></code></pre>
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- SECTION 6: HOSTING -->
+<!-- ═══════════════════════════════════════════════════ -->
+<section class="section" id="hosting">
+  <div class="section-header">
+    <span class="section-num">// 06</span>
+    <h2>Where to Host &amp; Deploy</h2>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <tr>
+        <th>Option</th>
+        <th>Best For</th>
+        <th>Pros</th>
+        <th>Cons</th>
+        <th>Cost Model</th>
+      </tr>
+      <tr>
+        <td><strong>AWS Lambda + SQS</strong></td>
+        <td>Event-driven, scalable</td>
+        <td>Auto-scale, serverless</td>
+        <td>Cold starts, 15min timeout</td>
+        <td>Per invocation</td>
+      </tr>
+      <tr>
+        <td><strong>AWS ECS / EKS</strong></td>
+        <td>Long-running agents</td>
+        <td>Full control, persistent</td>
+        <td>Ops overhead</td>
+        <td>Per hour</td>
+      </tr>
+      <tr>
+        <td><strong>Azure Container Apps</strong></td>
+        <td>Microservice agents</td>
+        <td>Scale-to-zero, DAPR support</td>
+        <td>Azure lock-in</td>
+        <td>Per vCPU/memory</td>
+      </tr>
+      <tr>
+        <td><strong>Google Cloud Run</strong></td>
+        <td>Stateless agents</td>
+        <td>Fully managed, fast deploy</td>
+        <td>Stateless only</td>
+        <td>Per request</td>
+      </tr>
+      <tr>
+        <td><strong>Modal</strong></td>
+        <td>ML workloads, GPU agents</td>
+        <td>Simple SDK, GPU access</td>
+        <td>Cost at scale</td>
+        <td>Per compute second</td>
+      </tr>
+      <tr>
+        <td><strong>Fly.io</strong></td>
+        <td>Global edge agents</td>
+        <td>Low latency, anycast</td>
+        <td>Limited ML tooling</td>
+        <td>Per VM/hour</td>
+      </tr>
+      <tr>
+        <td><strong>Self-hosted K8s</strong></td>
+        <td>Sensitive data, compliance</td>
+        <td>Full control, data sovereignty</td>
+        <td>High ops cost</td>
+        <td>Infrastructure</td>
+      </tr>
+      <tr>
+        <td><strong>Temporal.io</strong></td>
+        <td>Durable, long-running workflows</td>
+        <td>Fault-tolerant, replay</td>
+        <td>Learning curve</td>
+        <td>Per action</td>
+      </tr>
+    </table>
+  </div>
+
+  <h4>Production Architecture with Queuing + State</h4>
+  <pre><code><span class="code-label">Python · Production-ready agent service</span><span class="kw">from</span> fastapi <span class="kw">import</span> FastAPI, BackgroundTasks
+<span class="kw">from</span> redis <span class="kw">import</span> Redis
+<span class="kw">import</span> uuid
+
+app = <span class="cls">FastAPI</span>()
+redis = <span class="cls">Redis</span>(host=<span class="str">"redis"</span>, decode_responses=<span class="kw">True</span>)
+
+@app.post(<span class="str">"/tasks"</span>)
+<span class="kw">async def</span> <span class="fn">submit_task</span>(task: str, bg: <span class="cls">BackgroundTasks</span>):
+    task_id = str(uuid.<span class="fn">uuid4</span>())
+    redis.<span class="fn">hset</span>(<span class="str">f"task:{task_id}"</span>, mapping={
+        <span class="str">"status"</span>: <span class="str">"queued"</span>, <span class="str">"task"</span>: task
+    })
+    bg.<span class="fn">add_task</span>(process_task, task_id, task)
+    <span class="kw">return</span> {<span class="str">"task_id"</span>: task_id}
+
+<span class="kw">async def</span> <span class="fn">process_task</span>(task_id: str, task: str):
+    redis.<span class="fn">hset</span>(<span class="str">f"task:{task_id}"</span>, <span class="str">"status"</span>, <span class="str">"running"</span>)
+    <span class="kw">try</span>:
+        result = <span class="kw">await</span> <span class="fn">run_agent_async</span>(task)
+        redis.<span class="fn">hset</span>(<span class="str">f"task:{task_id}"</span>, mapping={
+            <span class="str">"status"</span>: <span class="str">"completed"</span>, <span class="str">"result"</span>: result
+        })
+    <span class="kw">except</span> Exception <span class="kw">as</span> e:
+        redis.<span class="fn">hset</span>(<span class="str">f"task:{task_id}"</span>, mapping={
+            <span class="str">"status"</span>: <span class="str">"failed"</span>, <span class="str">"error"</span>: str(e)
+        })
+
+@app.get(<span class="str">"/tasks/{task_id}"</span>)
+<span class="kw">async def</span> <span class="fn">get_task</span>(task_id: str):
+    <span class="kw">return</span> redis.<span class="fn">hgetall</span>(<span class="str">f"task:{task_id}"</span>)</code></pre>
+
+  <div class="callout green">
+    <p><strong>Recommended stack for most teams:</strong> FastAPI + Redis queues + Cloud Run (or ECS) for stateless agents. Add Temporal for durability if tasks exceed 5+ minutes or must survive failures. Use Langfuse or LangSmith for observability.</p>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- SECTION 7: USE CASES -->
+<!-- ═══════════════════════════════════════════════════ -->
+<section class="section" id="usecases">
+  <div class="section-header">
+    <span class="section-num">// 07</span>
+    <h2>Real-World Use Cases</h2>
+  </div>
+
+  <div class="industry-grid">
+    <!-- HEALTHCARE -->
+    <div class="industry-card">
+      <div class="industry-header">
+        <div class="industry-icon" style="background:rgba(16,185,129,0.15)">🏥</div>
+        <div>
+          <h3>Healthcare</h3>
+          <small>Clinical · Admin · Research</small>
+        </div>
+      </div>
+      <div class="industry-body">
+        <p>AI agents are transforming both clinical workflows and administrative overhead in healthcare, where accuracy and auditability are critical.</p>
+        <ul class="use-cases">
+          <li>Prior authorization agents that pull patient history, cross-check insurer requirements, and auto-submit forms — reducing 2-hour tasks to minutes</li>
+          <li>Clinical trial matching: ingest EHR, match patients to active trials, alert care team</li>
+          <li>Radiology assist: image analysis agent cross-references prior scans + literature to flag anomalies</li>
+          <li>Drug interaction checker with real-time formulary lookup and patient allergy context</li>
+          <li>Medical coding agents (ICD-10/CPT) that read clinical notes and suggest codes with confidence scores</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- FINANCE -->
+    <div class="industry-card">
+      <div class="industry-header">
+        <div class="industry-icon" style="background:rgba(245,158,11,0.15)">💰</div>
+        <div>
+          <h3>Finance &amp; Banking</h3>
+          <small>Trading · Risk · Compliance</small>
+        </div>
+      </div>
+      <div class="industry-body">
+        <p>Financial agents operate under strict compliance constraints but can dramatically accelerate research and operations.</p>
+        <ul class="use-cases">
+          <li>Equity research agents: crawl earnings calls, SEC filings, news → generate analyst-style reports</li>
+          <li>AML (Anti-Money Laundering): transaction graph analysis + SAR filing drafting</li>
+          <li>Customer onboarding KYC: document verification + risk scoring agent pipeline</li>
+          <li>Loan underwriting: multi-source credit analysis with explainable decisions</li>
+          <li>Regulatory change management: monitor regulatory feeds → assess impact → update policies</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SOFTWARE -->
+    <div class="industry-card">
+      <div class="industry-header">
+        <div class="industry-icon" style="background:rgba(124,58,237,0.15)">💻</div>
+        <div>
+          <h3>Software Engineering</h3>
+          <small>Dev · QA · DevOps</small>
+        </div>
+      </div>
+      <div class="industry-body">
+        <p>Coding agents are among the most mature and immediately valuable applications, with tools like Devin, GitHub Copilot Workspace, and Claude Code.</p>
+        <ul class="use-cases">
+          <li>Autonomous PR review: read diff, run tests, check style, post inline comments</li>
+          <li>Bug triage agent: read crash reports → reproduce → locate root cause → draft fix</li>
+          <li>API migration agent: scan codebase → identify deprecated calls → refactor → run test suite</li>
+          <li>Incident response: alert fires → agent queries logs, metrics, traces → posts RCA in Slack</li>
+          <li>Documentation agent: read source code → generate/update API docs, changelogs, READMEs</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- LEGAL -->
+    <div class="industry-card">
+      <div class="industry-header">
+        <div class="industry-icon" style="background:rgba(96,165,250,0.15)">⚖️</div>
+        <div>
+          <h3>Legal</h3>
+          <small>Research · Contracts · Discovery</small>
+        </div>
+      </div>
+      <div class="industry-body">
+        <p>Legal work is highly document-intensive and precedent-driven — ideal for retrieval-augmented agents with strong reasoning.</p>
+        <ul class="use-cases">
+          <li>Contract review: extract key terms, flag risky clauses, compare against company playbooks</li>
+          <li>Legal research: query case law databases (Westlaw, Lexis) → synthesize relevant precedents</li>
+          <li>e-Discovery: classify relevance and privilege across millions of documents</li>
+          <li>Regulatory compliance agent: monitor legislation feeds → alert on applicable changes</li>
+          <li>Patent drafting assistant: prior art search + claim generation + office action response</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- E-COMMERCE -->
+    <div class="industry-card">
+      <div class="industry-header">
+        <div class="industry-icon" style="background:rgba(236,72,153,0.15)">🛍️</div>
+        <div>
+          <h3>E-Commerce &amp; Retail</h3>
+          <small>Operations · CX · Merchandising</small>
+        </div>
+      </div>
+      <div class="industry-body">
+        <p>Retail agents operate at scale — millions of SKUs, orders, and customer interactions — where automation delivers compounding ROI.</p>
+        <ul class="use-cases">
+          <li>Personal shopping agent: understands style preferences, budget, occasion → curates full outfits</li>
+          <li>Inventory management: monitor stock levels, forecast demand, auto-generate POs</li>
+          <li>Customer support agent: handle returns, track packages, resolve disputes autonomously</li>
+          <li>Dynamic pricing agent: monitor competitor pricing + inventory + demand signals in real time</li>
+          <li>Catalog enrichment: auto-generate product descriptions, attributes, and SEO metadata at scale</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- EDUCATION -->
+    <div class="industry-card">
+      <div class="industry-header">
+        <div class="industry-icon" style="background:rgba(6,182,212,0.15)">🎓</div>
+        <div>
+          <h3>Education</h3>
+          <small>Tutoring · Assessment · Content</small>
+        </div>
+      </div>
+      <div class="industry-body">
+        <p>Educational agents can provide individualized instruction at scale — a tutor for every student, available 24/7.</p>
+        <ul class="use-cases">
+          <li>Socratic tutor: ask guiding questions, detect misconceptions, adapt to student's knowledge level</li>
+          <li>Auto-grader with feedback: evaluate essays beyond rubrics, provide specific improvement guidance</li>
+          <li>Curriculum design agent: generate lesson plans, exercises, and assessments from learning objectives</li>
+          <li>Accessibility agent: convert content to different reading levels, formats, languages on-demand</li>
+          <li>Research assistant for students: guided literature review with citation verification</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BEST PRACTICES -->
+<section class="section">
+  <div class="section-header">
+    <span class="section-num">// 08</span>
+    <h2>Production Best Practices</h2>
+  </div>
+  <div class="card-grid">
+    <div class="card purple">
+      <h3>Human-in-the-Loop</h3>
+      <p>For high-stakes actions (send email, execute trade, delete data), require explicit human approval. Build interrupt points into the agent loop.</p>
+    </div>
+    <div class="card cyan">
+      <h3>Observability</h3>
+      <p>Log every LLM call, tool execution, and decision. Use Langfuse, LangSmith, or OpenTelemetry to trace agent runs end-to-end.</p>
+    </div>
+    <div class="card amber">
+      <h3>Guardrails</h3>
+      <p>Validate tool inputs/outputs. Limit tool permissions (least privilege). Set iteration limits. Add input/output classifiers for harmful content.</p>
+    </div>
+    <div class="card green">
+      <h3>Cost Control</h3>
+      <p>Cache tool results and LLM responses. Use cheaper models for simple sub-tasks. Set hard token limits. Monitor cost-per-task.</p>
+    </div>
+    <div class="card red">
+      <h3>Failure Handling</h3>
+      <p>Agents fail gracefully: implement retry with backoff, fallback strategies, and clear error messages that the LLM can reason about.</p>
+    </div>
+    <div class="card pink">
+      <h3>Evals</h3>
+      <p>Build an evaluation harness with golden datasets. Test agent behavior on edge cases. Monitor production performance over time.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p>AI Agents Architecture Guide · Built with Claude · March 2025</p>
+  <p style="margin-top:0.5rem;color:#1a1a26">Core concepts · Memory management · Cognitive architectures · Frameworks · Multi-agent systems · Production deployment</p>
+</footer>
+
+</body>
+</html>
