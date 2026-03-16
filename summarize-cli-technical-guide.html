@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Summarize CLI — Technical Architecture Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,300&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:         #0a0a0f;
+      --surface:    #12121a;
+      --surface2:   #1a1a26;
+      --border:     #2a2a3e;
+      --accent:     #7c3aed;
+      --accent2:    #06b6d4;
+      --accent3:    #f59e0b;
+      --accent4:    #10b981;
+      --text:       #e2e8f0;
+      --text-muted: #94a3b8;
+      --text-dim:   #64748b;
+      --code-bg:    #0d0d18;
+      --red:        #ef4444;
+      --pink:       #ec4899;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Fraunces', serif;
+      font-weight: 300;
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+    p { margin-bottom: 1rem; color: var(--text-muted); }
+    p strong { color: var(--text); font-weight: 700; }
+    h4 { font-size: 1rem; color: var(--text); margin: 1.5rem 0 0.5rem; font-weight: 700; }
+    svg text { font-family: 'Space Mono', monospace; }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .hl        { color: var(--accent2); }
+    .hl-amber  { color: var(--accent3); }
+    .hl-green  { color: var(--accent4); }
+    .hl-purple { color: #c084fc; }
+
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 4rem 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 50%, rgba(124,58,237,0.15) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 80% at 80% 30%, rgba(6,182,212,0.1)  0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 60% 80%, rgba(245,158,11,0.08) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(124,58,237,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,58,237,0.06) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 80%);
+    }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .badge {
+      display: inline-block;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--accent2);
+      border: 1px solid rgba(6,182,212,0.3);
+      padding: 0.3rem 0.8rem;
+      border-radius: 2px;
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .hero h1 {
+      font-size: clamp(3rem, 8vw, 7rem);
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.02em;
+    }
+    .hero h1 .line1 { color: var(--text); }
+    .hero h1 .line2 {
+      color: transparent;
+      -webkit-text-stroke: 1px var(--accent);
+      display: block;
+    }
+    .hero h1 .line3 {
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: block;
+    }
+    .hero-desc {
+      font-style: italic;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      margin-bottom: 2.5rem;
+    }
+    .toc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+      max-width: 900px;
+    }
+    .toc-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.6rem 1rem;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      text-decoration: none;
+      color: var(--text-muted);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.72rem;
+      transition: all 0.2s;
+      letter-spacing: 0.05em;
+    }
+    .toc-item:hover {
+      background: rgba(124,58,237,0.1);
+      border-color: var(--accent);
+      color: var(--text);
+    }
+    .toc-num { color: var(--accent); font-weight: 700; }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    .section {
+      margin-bottom: 6rem;
+      scroll-margin-top: 2rem;
+    }
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-num {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--accent);
+      opacity: 0.7;
+      letter-spacing: 0.1em;
+      white-space: nowrap;
+    }
+    .section h2 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+    .card.purple::before { background: var(--accent); }
+    .card.cyan::before { background: var(--accent2); }
+    .card.amber::before { background: var(--accent3); }
+    .card.green::before { background: var(--accent4); }
+    .card.red::before { background: var(--red); }
+    .card.pink::before { background: var(--pink); }
+    .card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text); }
+    .card p  { font-size: 0.9rem; margin: 0; }
+    .card-icon { font-size: 1.5rem; margin-bottom: 0.75rem; display: block; }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.5rem;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      position: relative;
+    }
+    code {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.8rem;
+      line-height: 1.6;
+    }
+    .code-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--accent2);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      display: block;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .kw { color: #c084fc; }
+    .fn { color: #60a5fa; }
+    .str { color: #86efac; }
+    .cm { color: var(--text-dim); font-style: italic; }
+    .num { color: var(--accent3); }
+    .cls { color: #fbbf24; }
+    .op { color: var(--accent2); }
+    .var { color: #f9a8d4; }
+
+    .callout {
+      background: rgba(124,58,237,0.08);
+      border-left: 3px solid var(--accent);
+      padding: 1rem 1.5rem;
+      margin: 1.5rem 0;
+      border-radius: 0 6px 6px 0;
+    }
+    .callout.cyan { background: rgba(6,182,212,0.08); border-left-color: var(--accent2); }
+    .callout.amber { background: rgba(245,158,11,0.08); border-left-color: var(--accent3); }
+    .callout.green { background: rgba(16,185,129,0.08); border-left-color: var(--accent4); }
+    .callout p { margin: 0; font-size: 0.9rem; }
+
+    .table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+    th {
+      background: var(--surface2);
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid rgba(42,42,62,0.5);
+      color: var(--text-muted);
+      vertical-align: top;
+    }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    td strong { color: var(--text); }
+    td .tag {
+      display: inline-block;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 2px;
+      margin: 0.1rem;
+    }
+    .tag-green { background: rgba(16,185,129,0.15); color: #10b981; }
+    .tag-amber { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .tag-red { background: rgba(239,68,68,0.15); color: #ef4444; }
+    .tag-blue { background: rgba(96,165,250,0.15); color: #60a5fa; }
+    .tag-purple { background: rgba(124,58,237,0.15); color: #c084fc; }
+
+    .diagram {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 2rem 0;
+    }
+    .diagram-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--accent2);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    .industry-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.25rem;
+      margin: 1.5rem 0;
+    }
+    .industry-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+    .industry-header {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .industry-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+    .industry-header h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+    }
+    .industry-header small {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      letter-spacing: 0.05em;
+    }
+    .industry-body p {
+      font-size: 0.9rem;
+      margin-bottom: 0.75rem;
+    }
+    .use-cases {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .use-cases li {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      padding: 0.35rem 0;
+      padding-left: 1rem;
+      position: relative;
+    }
+    .use-cases li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--accent2);
+      font-family: 'Space Mono', monospace;
+    }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-dim);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <div class="hero-grid"></div>
+    <div class="hero-content">
+      <span class="badge">Technical Analysis · steipete/summarize · March 2026</span>
+      <h1>
+        <span class="line1">Summarize CLI</span>
+        <span class="line2">Technical Deep</span>
+        <span class="line3">Architecture Guide</span>
+      </h1>
+      <p class="hero-desc">A comprehensive analysis of the Node.js summarization tool's architecture, pipelines, and implementation patterns.</p>
+      <div class="toc-grid">
+        <a href="#overview" class="toc-item"><span class="toc-num">01</span> Overview & Architecture</a>
+        <a href="#cli-flow" class="toc-item"><span class="toc-num">02</span> CLI Command Flow</a>
+        <a href="#website" class="toc-item"><span class="toc-num">03</span> Website Content Extraction</a>
+        <a href="#youtube" class="toc-item"><span class="toc-num">04</span> YouTube Transcript Pipeline</a>
+        <a href="#llm" class="toc-item"><span class="toc-num">05</span> LLM Gateway & Providers</a>
+        <a href="#caching" class="toc-item"><span class="toc-num">06</span> Caching System</a>
+        <a href="#config" class="toc-item"><span class="toc-num">07</span> Configuration System</a>
+        <a href="#daemon" class="toc-item"><span class="toc-num">08</span> Daemon Server</a>
+        <a href="#best-practices" class="toc-item"><span class="toc-num">09</span> Best Practices</a>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <section class="section" id="overview">
+      <div class="section-header">
+        <span class="section-num">// 01</span>
+        <h2>Overview & Architecture</h2>
+      </div>
+      <p>The <strong>summarize CLI</strong> is a sophisticated Node.js-based tool that orchestrates multiple content extraction pipelines with various LLM providers. It features a modular architecture with a separate daemon server for browser extension integration, two-tier caching, and support for diverse content types including websites, YouTube videos, podcasts, and local files.</p>
+
+      <div class="card-grid">
+        <div class="card purple">
+          <span class="card-icon">🖥️</span>
+          <h3>CLI Interface</h3>
+          <p>Command-line tool built with Commander.js for argument parsing and user interaction.</p>
+        </div>
+        <div class="card cyan">
+          <span class="card-icon">🔄</span>
+          <h3>Content Pipelines</h3>
+          <p>Specialized extraction flows for websites, YouTube, documents, and media files.</p>
+        </div>
+        <div class="card amber">
+          <span class="card-icon">🤖</span>
+          <h3>LLM Gateway</h3>
+          <p>Unified interface supporting OpenAI, Anthropic, Google, xAI, and OpenRouter providers.</p>
+        </div>
+        <div class="card green">
+          <span class="card-icon">💾</span>
+          <h3>Two-Tier Caching</h3>
+          <p>SQLite database for structured data, file-based cache for media downloads.</p>
+        </div>
+        <div class="card red">
+          <span class="card-icon">🌐</span>
+          <h3>Daemon Server</h3>
+          <p>HTTP server bridging browser extension to CLI capabilities via SSE streaming.</p>
+        </div>
+        <div class="card pink">
+          <span class="card-icon">⚙️</span>
+          <h3>Configuration</h3>
+          <p>JSON5-based settings with model rules, API keys, and provider preferences.</p>
+        </div>
+      </div>
+
+      <div class="diagram">
+        <div class="diagram-title">High-Level System Architecture</div>
+        <svg viewBox="0 0 900 450" width="100%" style="max-width:900px;display:block;margin:0 auto;">
+          <defs>
+            <marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#7c3aed"/>
+            </marker>
+            <marker id="arr2" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#06b6d4"/>
+            </marker>
+            <marker id="arr3" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#10b981"/>
+            </marker>
+          </defs>
+
+          <!-- User/Browser -->
+          <rect x="50" y="30" width="120" height="50" rx="6" fill="#1a1a26" stroke="#7c3aed" stroke-width="1.5"/>
+          <text x="110" y="52" text-anchor="middle" fill="#c084fc" font-size="10" font-weight="700">USER / BROWSER</text>
+          <text x="110" y="65" text-anchor="middle" fill="#94a3b8" font-size="9">CLI or Extension</text>
+
+          <!-- CLI Entry -->
+          <rect x="50" y="130" width="120" height="50" rx="6" fill="#1a1a26" stroke="#06b6d4" stroke-width="1.5"/>
+          <text x="110" y="152" text-anchor="middle" fill="#67e8f9" font-size="10" font-weight="700">CLI ENTRY</text>
+          <text x="110" y="165" text-anchor="middle" fill="#94a3b8" font-size="9">cli.ts → cli-main.ts</text>
+
+          <!-- Daemon -->
+          <rect x="230" y="130" width="120" height="50" rx="6" fill="#1a1a26" stroke="#06b6d4" stroke-width="1.5"/>
+          <text x="290" y="152" text-anchor="middle" fill="#67e8f9" font-size="10" font-weight="700">DAEMON SERVER</text>
+          <text x="290" y="165" text-anchor="middle" fill="#94a3b8" font-size="9">HTTP + SSE</text>
+
+          <!-- Content Extraction -->
+          <rect x="100" y="230" width="140" height="50" rx="6" fill="#1a1a26" stroke="#f59e0b" stroke-width="1.5"/>
+          <text x="170" y="252" text-anchor="middle" fill="#fcd34d" font-size="10" font-weight="700">CONTENT EXTRACTION</text>
+          <text x="170" y="265" text-anchor="middle" fill="#94a3b8" font-size="9">Readability / yt-dlp / Apify</text>
+
+          <!-- LLM Gateway -->
+          <rect x="300" y="230" width="140" height="50" rx="6" fill="#1a1a26" stroke="#10b981" stroke-width="1.5"/>
+          <text x="370" y="252" text-anchor="middle" fill="#6ee7b7" font-size="10" font-weight="700">LLM GATEWAY</text>
+          <text x="370" y="265" text-anchor="middle" fill="#94a3b8" font-size="9">Multi-provider routing</text>
+
+          <!-- Cache -->
+          <rect x="500" y="230" width="120" height="50" rx="6" fill="#1a1a26" stroke="#ec4899" stroke-width="1.5"/>
+          <text x="560" y="252" text-anchor="middle" fill="#f472b6" font-size="10" font-weight="700">CACHE LAYER</text>
+          <text x="560" y="265" text-anchor="middle" fill="#94a3b8" font-size="9">SQLite + Media</text>
+
+          <!-- LLM Providers -->
+          <rect x="200" y="350" width="480" height="60" rx="6" fill="#1a1a26" stroke="#7c3aed" stroke-width="1"/>
+          <text x="440" y="372" text-anchor="middle" fill="#c084fc" font-size="10" font-weight="700">LLM PROVIDERS</text>
+          <text x="280" y="390" text-anchor="middle" fill="#94a3b8" font-size="9">OpenAI</text>
+          <text x="350" y="390" text-anchor="middle" fill="#94a3b8" font-size="9">Anthropic</text>
+          <text x="430" y="390" text-anchor="middle" fill="#94a3b8" font-size="9">Google</text>
+          <text x="510" y="390" text-anchor="middle" fill="#94a3b8" font-size="9">xAI</text>
+          <text x="580" y="390" text-anchor="middle" fill="#94a3b8" font-size="9">OpenRouter</text>
+
+          <!-- External Services -->
+          <rect x="730" y="230" width="130" height="60" rx="6" fill="#1a1a26" stroke="#f59e0b" stroke-width="1"/>
+          <text x="795" y="252" text-anchor="middle" fill="#fcd34d" font-size="10" font-weight="700">EXTERNAL SERVICES</text>
+          <text x="795" y="270" text-anchor="middle" fill="#94a3b8" font-size="9">Firecrawl · Apify</text>
+          <text x="795" y="283" text-anchor="middle" fill="#94a3b8" font-size="9">Groq · AssemblyAI</text>
+
+          <!-- Arrows -->
+          <path d="M110 80 L110 130" stroke="#7c3aed" stroke-width="2" marker-end="url(#arr)"/>
+          <path d="M170 80 L290 130" stroke="#06b6d4" stroke-width="2" marker-end="url(#arr2)"/>
+          <path d="M110 180 L170 230" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arr3)"/>
+          <path d="M290 180 L370 230" stroke="#10b981" stroke-width="1.5" marker-end="url(#arr3)"/>
+          <path d="M370 280 L440 350" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#arr)"/>
+          <path d="M170 280 L560 280" stroke="#ec4899" stroke-width="1.5" marker-end="url(#arr)"/>
+          <path d="M440 280 L730 280" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr3)"/>
+        </svg>
+      </div>
+
+      <div class="callout">
+        <p><strong>Key architectural principle:</strong> The system uses a <span class="hl">gateway-style model ID format</span> (`<provider>/<model>`) that enables transparent routing between different LLM providers with automatic fallback mechanisms and unified streaming interfaces.</p>
+      </div>
+    </section>
+
+    <section class="section" id="cli-flow">
+      <div class="section-header">
+        <span class="section-num">// 02</span>
+        <h2>CLI Command Flow</h2>
+      </div>
+      <p>The CLI follows a clear execution path from user invocation to final output. Understanding this flow is essential for debugging and extending the tool's functionality.</p>
+
+      <h4>Entry Points</h4>
+      <p>The CLI has three primary entry points that handle initialization, orchestration, and execution:</p>
+
+      <div class="industry-grid">
+        <div class="industry-card">
+          <div class="industry-header">
+            <div class="industry-icon" style="background:rgba(124,58,237,0.15)">📍</div>
+            <div>
+              <h3>src/cli.ts</h3>
+              <small>Entry Point</small>
+            </div>
+          </div>
+          <div class="industry-body">
+            <p>Top-level entry point that imports and calls runCliMain() with process.argv and environment details.</p>
+          </div>
+        </div>
+
+        <div class="industry-card">
+          <div class="industry-header">
+            <div class="industry-icon" style="background:rgba(6,182,212,0.15)">🔧</div>
+            <div>
+              <h3>src/cli-main.ts</h3>
+              <small>Initialization</small>
+            </div>
+          </div>
+          <div class="industry-body">
+            <p>Handles error piping, loads .env files, and calls runCli() for core logic execution.</p>
+          </div>
+        </div>
+
+        <div class="industry-card">
+          <div class="industry-header">
+            <div class="industry-icon" style="background:rgba(16,185,129,0.15)">⚙️</div>
+            <div>
+              <h3>src/run/runner.ts</h3>
+              <small>Orchestration</small>
+            </div>
+          </div>
+          <div class="industry-body">
+            <p>Contains runCli() which parses arguments, resolves input, and routes to appropriate flows.</p>
+          </div>
+        </div>
+      </div>
+
+      <h4>Execution Pipeline</h4>
+      <p>The command execution follows a sequential pipeline with pre-flight checks, input resolution, and flow routing:</p>
+
+      <pre><code><span class="code-label">TypeScript · CLI Flow Pseudocode</span><span class="cm">// User invokes: summarize &lt;url|file&gt;</span>
+
+<span class="kw">async</span> <span class="kw">function</span> <span class="fn">runCli</span>(argv) {
+  <span class="cm">// Step 1: Pre-flight checks</span>
+  <span class="kw">if</span> (<span class="fn">isHelpRequest</span>(argv)) <span class="kw">return</span> <span class="fn">showHelp</span>();
+  <span class="kw">await</span> <span class="fn">refreshFreeModels</span>();  <span class="cm">// Update available models</span>
+  <span class="kw">await</span> <span class="fn">handleDaemonCommands</span>(argv);  <span class="cm">// Install/status/run</span>
+
+  <span class="cm">// Step 2: Parse arguments with Commander</span>
+  <span class="kw">const</span> program = <span class="fn">buildProgram</span>();
+  <span class="kw">const</span> options = program.<span class="fn">parseAsync</span>(argv);
+
+  <span class="cm">// Step 3: Resolve input type</span>
+  <span class="kw">const</span> input = <span class="kw">await</span> <span class="fn">resolveRunInput</span>(options);
+  <span class="cm">// Returns: { type: 'url' | 'file' | 'stdin', value, ... }</span>
+
+  <span class="cm">// Step 4: Route to appropriate flow</span>
+  <span class="kw">if</span> (input.type === <span class="str">'url'</span>) {
+    <span class="kw">return await</span> <span class="fn">runUrlFlow</span>(input, options);
+  } <span class="kw">else if</span> (input.type === <span class="str">'file'</span> || input.type === <span class="str">'stdin'</span>) {
+    <span class="kw">return await</span> <span class="fn">handleFileInput</span>(input, options);
+  }
+}</code></pre>
+
+      <div class="table-wrap">
+        <table>
+          <tr><th>CLI Flag</th><th>Purpose</th><th>Default</th></tr>
+          <tr>
+            <td><strong>--length</strong></td>
+            <td>Output length specification</td>
+            <td><span class="tag tag-purple">medium</span></td>
+          </tr>
+          <tr>
+            <td><strong>--model</strong></td>
+            <td>LLM model selection</td>
+            <td><span class="tag tag-purple">auto</span></td>
+          </tr>
+          <tr>
+            <td><strong>--youtube</strong></td>
+            <td>Transcript source mode</td>
+            <td><span class="tag tag-purple">auto</span></td>
+          </tr>
+          <tr>
+            <td><strong>--firecrawl</strong></td>
+            <td>Website extraction fallback</td>
+            <td><span class="tag tag-amber">auto</span></td>
+          </tr>
+          <tr>
+            <td><strong>--json</strong></td>
+            <td>Machine-readable output</td>
+            <td><span class="tag tag-red">false</span></td>
+          </tr>
+          <tr>
+            <td><strong>--extract</strong></td>
+            <td>Extract-only mode</td>
+            <td><span class="tag tag-red">false</span></td>
+          </tr>
+          <tr>
+            <td><strong>--no-cache</strong></td>
+            <td>Bypass summary cache</td>
+            <td><span class="tag tag-red">false</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="callout cyan">
+        <p><strong>Flow routing decision:</strong> The CLI uses <span class="hl">resolveRunInput()</span> to automatically detect input type—URL, file path, or stdin stream—and routes to specialized handlers without requiring explicit flags from the user.</p>
+      </div>
+    </section>
+
+    <section class="section" id="website">
+      <div class="section-header">
+        <span class="section-num">// 03</span>
+        <h2>Website Content Extraction</h2>
+      </div>
+      <p>Website summarization relies on Mozilla Readability, a library originally created for Firefox's Reader View. It extracts the main article content by analyzing the HTML DOM and identifying which elements contain actual content versus navigation, ads, and sidebars.</p>
+
+      <div class="diagram">
+        <div class="diagram-title">Website Extraction Pipeline</div>
+        <svg viewBox="0 0 850 320" width="100%" style="max-width:850px;display:block;margin:0 auto;">
+          <defs>
+            <marker id="arr-web" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#06b6d4"/>
+            </marker>
+            <marker id="arr-web2" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#7c3aed"/>
+            </marker>
+          </defs>
+
+          <!-- URL Input -->
+          <rect x="30" y="130" width="100" height="40" rx="6" fill="#1a1a26" stroke="#7c3aed" stroke-width="1.5"/>
+          <text x="80" y="155" text-anchor="middle" fill="#c084fc" font-size="10" font-weight="700">URL INPUT</text>
+
+          <!-- Fetch HTML -->
+          <rect x="180" y="130" width="100" height="40" rx="6" fill="#1a1a26" stroke="#06b6d4" stroke-width="1.5"/>
+          <text x="230" y="155" text-anchor="middle" fill="#67e8f9" font-size="10" font-weight="700">FETCH HTML</text>
+
+          <!-- Parse DOM -->
+          <rect x="330" y="130" width="100" height="40" rx="6" fill="#1a1a26" stroke="#06b6d4" stroke-width="1.5"/>
+          <text x="380" y="148" text-anchor="middle" fill="#67e8f9" font-size="10" font-weight="700">PARSE DOM</text>
+          <text x="380" y="161" text-anchor="middle" fill="#94a3b8" font-size="9">jsdom</text>
+
+          <!-- Readability -->
+          <rect x="480" y="120" width="120" height="60" rx="6" fill="#1a1a26" stroke="#10b981" stroke-width="1.5"/>
+          <text x="540" y="143" text-anchor="middle" fill="#6ee7b7" font-size="10" font-weight="700">READABILITY</text>
+          <text x="540" y="158" text-anchor="middle" fill="#94a3b8" font-size="9">Extract article</text>
+          <text x="540" y="171" text-anchor="middle" fill="#94a3b8" font-size="9">Remove clutter</text>
+
+          <!-- Firecrawl Fallback -->
+          <rect x="480" y="210" width="120" height="40" rx="6" fill="#1a1a26" stroke="#f59e0b" stroke-width="1.5"/>
+          <text x="540" y="235" text-anchor="middle" fill="#fcd34d" font-size="10" font-weight="700">FIRECRAWL</text>
+
+          <!-- Check Content -->
+          <polygon points="660,150 690,120 720,150 690,180" fill="#1a1a26" stroke="#ec4899" stroke-width="1.5"/>
+          <text x="690" y="148" text-anchor="middle" fill="#f472b6" font-size="8" font-weight="700">MIN?</text>
+          <text x="690" y="158" text-anchor="middle" fill="#94a3b8" font-size="7">chars</text>
+
+          <!-- Markdown Conversion -->
+          <rect x="750" y="130" width="80" height="40" rx="6" fill="#1a1a26" stroke="#06b6d4" stroke-width="1.5"/>
+          <text x="790" y="148" text-anchor="middle" fill="#67e8f9" font-size="10" font-weight="700">MARKDOWN</text>
+          <text x="790" y="161" text-anchor="middle" fill="#94a3b8" font-size="9">optional</text>
+
+          <!-- Arrows -->
+          <path d="M130 150 L180 150" stroke="#06b6d4" stroke-width="2" marker-end="url(#arr-web)"/>
+          <path d="M280 150 L330 150" stroke="#06b6d4" stroke-width="2" marker-end="url(#arr-web)"/>
+          <path d="M430 150 L480 150" stroke="#10b981" stroke-width="2" marker-end="url(#arr-web2)"/>
+          <path d="M600 150 L660 150" stroke="#7c3aed" stroke-width="2" marker-end="url(#arr-web2)"/>
+          <path d="M720 150 L750 150" stroke="#06b6d4" stroke-width="2" marker-end="url(#arr-web)"/>
+          <path d="M600 150 L620 150 L620 230 L480 230" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr-web)"/>
+          <text x="635" y="190" fill="#94a3b8" font-size="8">Too short?</text>
+        </svg>
+      </div>
+
+      <h4>Extraction Process</h4>
+      <p>The website extraction follows a multi-stage process with automatic fallback mechanisms:</p>
+
+      <div class="two-col">
+        <div>
+          <p><strong>Primary Extraction (Readability)</strong></p>
+          <p>Mozilla Readability parses the HTML DOM and extracts article content by removing navigation, ads, sidebars, and comments. It returns clean title and body text.</p>
+        </div>
+        <div>
+          <p><strong>Fallback Mechanism (Firecrawl)</strong></p>
+          <p>If Readability extraction produces less than <code>MIN_READABILITY_CONTENT_CHARACTERS</code>, the system automatically falls back to Firecrawl API for more robust extraction.</p>
+        </div>
+      </div>
+
+      <pre><code><span class="code-label">TypeScript · Website Content Extraction</span><span class="kw">import</span> { <span class="cls">JSDOM</span> } <span class="kw">from</span> <span class="str">'jsdom'</span>;
+<span class="kw">import</span> { <span class="cls">Readability</span> } <span class="kw">from</span> <span class="str">'@mozilla/readability'</span>;
+
+<span class="kw">async function</span> <span class="fn">extractWebsiteContent</span>(url: <span class="cls">string</span>) {
+  <span class="cm">// Step 1: Fetch HTML</span>
+  <span class="kw">const</span> response = <span class="kw">await</span> <span class="fn">fetch</span>(url);
+  <span class="kw">const</span> html = <span class="kw">await</span> response.<span class="fn">text</span>();
+
+  <span class="cm">// Step 2: Parse with jsdom (virtual DOM)</span>
+  <span class="kw">const</span> dom = <span class="kw">new</span> <span class="cls">JSDOM</span>(html);
+  <span class="kw">const</span> document = dom.window.document;
+
+  <span class="cm">// Step 3: Extract with Readability</span>
+  <span class="kw">const</span> reader = <span class="kw">new</span> <span class="cls">Readability</span>(document);
+  <span class="kw">const</span> article = reader.<span class="fn">parse</span>();
+
+  <span class="cm">// Step 4: Check content quality</span>
+  <span class="kw">if</span> (!article || article.textContent.length < <span class="cls">MIN_CHARS</span>) {
+    <span class="cm">// Fallback to Firecrawl</span>
+    <span class="kw">return await</span> <span class="fn">extractWithFirecrawl</span>(url);
+  }
+
+  <span class="cm">// Step 5: Convert to Markdown (optional)</span>
+  <span class="kw">return</span> {
+    title: article.title,
+    content: article.textContent,
+    <span class="cm">// markdown: convertHtmlToMarkdown(article.content)</span>
+  };
+}</code></pre>
+
+      <div class="callout amber">
+        <p><strong>Markdown mode options:</strong> The <code>--markdown-mode</code> flag controls HTML conversion with options like <span class="hl-amber">readability</span> (default), <span class="hl-amber">auto</span>, <span class="hl-amber">llm</span>, or <span class="hl-amber">off</span>. Each mode uses different strategies for converting HTML to Markdown format.</p>
+      </div>
+    </section>
+
+    <section class="section" id="youtube">
+      <div class="section-header">
+        <span class="section-num">// 04</span>
+        <h2>YouTube Transcript Pipeline</h2>
+      </div>
+      <p>YouTube transcript acquisition uses multiple methods with automatic fallback, from free web scraping to paid APIs. Each method has different trade-offs in speed, reliability, and coverage.</p>
+
+      <div class="table-wrap">
+        <table>
+          <tr><th>Mode</th><th>Method</th><th>Speed</th><th>Cost</th><th>Coverage</th><th>Reliability</th></tr>
+          <tr>
+            <td><strong>youtubei</strong></td>
+            <td>YouTube internal API</td>
+            <td><span class="tag tag-green">Fast</span></td>
+            <td><span class="tag tag-green">Free</span></td>
+            <td><span class="tag tag-amber">Limited</span></td>
+            <td><span class="tag tag-amber">Medium</span></td>
+          </tr>
+          <tr>
+            <td><strong>captionTracks</strong></td>
+            <td>Embedded caption files</td>
+            <td><span class="tag tag-green">Fast</span></td>
+            <td><span class="tag tag-green">Free</span></td>
+            <td><span class="tag tag-amber">Limited</span></td>
+            <td><span class="tag tag-green">High</span></td>
+          </tr>
+          <tr>
+            <td><strong>yt-dlp</strong></td>
+            <td>Download + transcribe</td>
+            <td><span class="tag tag-red">Slow</span></td>
+            <td><span class="tag tag-green">Free</span></td>
+            <td><span class="tag tag-green">Universal</span></td>
+            <td><span class="tag tag-green">High</span></td>
+          </tr>
+          <tr>
+            <td><strong>apify</strong></td>
+            <td>Web scraping service</td>
+            <td><span class="tag tag-green">Fast</span></td>
+            <td><span class="tag tag-red">Paid</span></td>
+            <td><span class="tag tag-green">High</span></td>
+            <td><span class="tag tag-green">High</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <h4>Mode Fallback Order</h4>
+      <p>The <code>--youtube auto</code> mode (default) attempts methods in sequence until one succeeds:</p>
+
+      <div class="diagram">
+        <div class="diagram-title">YouTube Transcript Fallback Flow</div>
+        <svg viewBox="0 0 700 280" width="100%" style="max-width:700px;display:block;margin:0 auto;">
+          <defs>
+            <marker id="arr-yt" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#06b6d4"/>
+            </marker>
+            <marker id="arr-yt2" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#10b981"/>
+            </marker>
+            <marker id="arr-yt3" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#f59e0b"/>
+            </marker>
+          </defs>
+
+          <!-- YouTube URL -->
+          <rect x="30" y="120" width="100" height="40" rx="6" fill="#1a1a26" stroke="#ef4444" stroke-width="1.5"/>
+          <text x="80" y="145" text-anchor="middle" fill="#f87171" font-size="10" font-weight="700">YOUTUBE URL</text>
+
+          <!-- youtubei -->
+          <rect x="180" y="120" width="100" height="40" rx="6" fill="#1a1a26" stroke="#10b981" stroke-width="1.5"/>
+          <text x="230" y="138" text-anchor="middle" fill="#6ee7b7" font-size="10" font-weight="700">youtubei</text>
+          <text x="230" y="151" text-anchor="middle" fill="#94a3b8" font-size="9">Internal API</text>
+
+          <!-- captionTracks -->
+          <rect x="330" y="120" width="110" height="40" rx="6" fill="#1a1a26" stroke="#06b6d4" stroke-width="1.5"/>
+          <text x="385" y="138" text-anchor="middle" fill="#67e8f9" font-size="10" font-weight="700">captionTracks</text>
+          <text x="385" y="151" text-anchor="middle" fill="#94a3b8" font-size="9">Embedded</text>
+
+          <!-- yt-dlp -->
+          <rect x="490" y="120" width="90" height="40" rx="6" fill="#1a1a26" stroke="#f59e0b" stroke-width="1.5"/>
+          <text x="535" y="138" text-anchor="middle" fill="#fcd34d" font-size="10" font-weight="700">yt-dlp</text>
+          <text x="535" y="151" text-anchor="middle" fill="#94a3b8" font-size="9">Download</text>
+
+          <!-- apify -->
+          <rect x="620" y="120" width="80" height="40" rx="6" fill="#1a1a26" stroke="#ec4899" stroke-width="1.5"/>
+          <text x="660" y="145" text-anchor="middle" fill="#f472b6" font-size="10" font-weight="700">apify</text>
+
+          <!-- Transcript Output -->
+          <rect x="300" y="220" width="120" height="40" rx="6" fill="#1a1a26" stroke="#7c3aed" stroke-width="1.5"/>
+          <text x="360" y="245" text-anchor="middle" fill="#c084fc" font-size="10" font-weight="700">TRANSCRIPT</text>
+
+          <!-- Arrows -->
+          <path d="M130 140 L180 140" stroke="#10b981" stroke-width="2" marker-end="url(#arr-yt2)"/>
+          <path d="M280 140 L330 140" stroke="#06b6d4" stroke-width="2" marker-end="url(#arr-yt)"/>
+          <path d="M440 140 L490 140" stroke="#f59e0b" stroke-width="2" marker-end="url(#arr-yt3)"/>
+          <path d="M580 140 L620 140" stroke="#ec4899" stroke-width="2" marker-end="url(#arr-yt)"/>
+
+          <!-- Success paths -->
+          <path d="M230 160 L230 190 L340 220" stroke="#10b981" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#arr-yt2)"/>
+          <path d="M385 160 L385 190 L380 220" stroke="#06b6d4" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#arr-yt)"/>
+          <path d="M535 160 L535 190 L400 220" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#arr-yt3)"/>
+          <path d="M660 160 L660 190 L420 220" stroke="#ec4899" stroke-width="1.5" stroke-dasharray="3,2" marker-end="url(#arr-yt)"/>
+
+          <!-- Labels -->
+          <text x="230" y="180" fill="#10b981" font-size="8">Success?</text>
+          <text x="385" y="180" fill="#06b6d4" font-size="8">Success?</text>
+          <text x="535" y="180" fill="#f59e0b" font-size="8">Success?</text>
+          <text x="660" y="180" fill="#ec4899" font-size="8">Success?</text>
+        </svg>
+      </div>
+
+      <pre><code><span class="code-label">TypeScript · YouTube Transcript Fetching</span><span class="kw">async function</span> <span class="fn">fetchTranscript</span>(
+  videoId: <span class="cls">string</span>,
+  mode: <span class="str">'auto'</span> | <span class="str">'web'</span> | <span class="str">'yt-dlp'</span> | <span class="str">'apify'</span>
+): <span class="cls">Promise</span>&lt;<span class="cls">Transcript</span>&gt; {
+
+  <span class="kw">if</span> (mode === <span class="str">'auto'</span> || mode === <span class="str">'web'</span>) {
+    <span class="cm">// Try youtubei (internal API)</span>
+    <span class="kw">const</span> youtubeiResult = <span class="kw">await</span> <span class="fn">fetchTranscriptFromTranscriptEndpoint</span>(videoId);
+    <span class="kw">if</span> (youtubeiResult) <span class="kw">return</span> youtubeiResult;
+
+    <span class="cm">// Try captionTracks (embedded captions)</span>
+    <span class="kw">const</span> captionResult = <span class="kw">await</span> <span class="fn">fetchTranscriptFromCaptionTracks</span>(videoId);
+    <span class="kw">if</span> (captionResult) <span class="kw">return</span> captionResult;
+  }
+
+  <span class="kw">if</span> (mode === <span class="str">'auto'</span> && <span class="fn">canRunYtDlp</span>()) {
+    <span class="cm">// Download audio and transcribe with Whisper</span>
+    <span class="kw">const</span> ytdlpResult = <span class="kw">await</span> <span class="fn">tryYtDlpTranscript</span>(videoId);
+    <span class="kw">if</span> (ytdlpResult) <span class="kw">return</span> ytdlpResult;
+  }
+
+  <span class="cm">// Final fallback: Apify scraping service</span>
+  <span class="kw">if</span> (mode === <span class="str">'auto'</span> || mode === <span class="str">'apify'</span>) {
+    <span class="kw">return await</span> <span class="fn">fetchTranscriptWithApify</span>(videoId);
+  }
+
+  <span class="kw">throw new</span> <span class="cls">Error</span>(<span class="str">'No transcript available'</span>);
+}</code></pre>
+
+      <div class="callout green">
+        <p><strong>Universal coverage advantage:</strong> The <span class="hl-green">yt-dlp mode</span> works on <strong>any</strong> YouTube video, even those without captions, by downloading audio and transcribing it with Whisper. This makes it the ultimate fallback at the cost of speed and processing requirements.</p>
+      </div>
+    </section>
+
+    <section class="section" id="llm">
+      <div class="section-header">
+        <span class="section-num">// 05</span>
+        <h2>LLM Gateway & Provider Integration</h2>
+      </div>
+      <p>The LLM gateway provides a unified interface for multiple AI providers through a "gateway-style" model ID format. It handles provider selection, streaming responses, and automatic fallback between providers.</p>
+
+      <h4>Supported Providers</h4>
+      <div class="card-grid">
+        <div class="card purple">
+          <span class="card-icon">🔷</span>
+          <h3>OpenAI</h3>
+          <p>Requires <code>OPENAI_API_KEY</code>. Supports GPT-4, GPT-4o, GPT-4o-mini models with configurable base URL.</p>
+        </div>
+        <div class="card cyan">
+          <span class="card-icon">🟣</span>
+          <h3>Anthropic</h3>
+          <p>Requires <code>ANTHROPIC_API_KEY</code>. Supports Claude Sonnet, Haiku, and Opus models.</p>
+        </div>
+        <div class="card amber">
+          <span class="card-icon">🔶</span>
+          <h3>Google</h3>
+          <p>Requires <code>GEMINI_API_KEY</code>. Supports Gemini 1.5, Gemini 2.0 Flash, and Pro models.</p>
+        </div>
+        <div class="card green">
+          <span class="card-icon">⚫</span>
+          <h3>xAI</h3>
+          <p>Requires <code>XAI_API_KEY</code>. Supports Grok models with custom endpoint configuration.</p>
+        </div>
+        <div class="card red">
+          <span class="card-icon">🔴</span>
+          <h3>OpenRouter</h3>
+          <p>Requires <code>OPENROUTER_API_KEY</code>. Aggregator providing access to 100+ models including free tiers.</p>
+        </div>
+        <div class="card pink">
+          <span class="card-icon">💠</span>
+          <h3>CLI Models</h3>
+          <p>Local CLI tools like Claude, Gemini, and Codex can be used via <code>cli/&lt;provider&gt;</code> format.</p>
+        </div>
+      </div>
+
+      <h4>Model Attempts System</h4>
+      <p>The gateway uses a sophisticated "model attempts" system that transforms user configuration into an ordered list of validated attempts:</p>
+
+      <pre><code><span class="code-label">TypeScript · Model Attempt Pipeline</span><span class="kw">interface</span> <span class="cls">ModelAttempt</span> {
+  transport: <span class="str">'native'</span> | <span class="str">'openrouter'</span> | <span class="str">'cli'</span>;
+  userModelId: <span class="cls">string</span>;
+  llmModelId: <span class="cls">string</span>;
+  requiredEnv: <span class="cls">string</span>[];
+}
+
+<span class="kw">async function</span> <span class="fn">buildModelAttempts</span>(
+  config: <span class="cls">Config</span>,
+  inputType: <span class="cls">InputType</span>
+): <span class="cls">ModelAttempt</span>[] {
+  <span class="kw">const</span> attempts: <span class="cls">ModelAttempt</span>[] = [];
+
+  <span class="cm">// Step 1: Rule resolution - match input to config rules</span>
+  <span class="kw">const</span> rules = <span class="fn">resolveRulesForInput</span>(config.model, inputType);
+
+  <span class="cm">// Step 2: CLI prepend (if enabled)</span>
+  <span class="kw">if</span> (config.cli.enabled) {
+    attempts.<span class="fn">push</span>(...<span class="fn">buildCliAttempts</span>(config.cli.enabled));
+  }
+
+  <span class="cm">// Step 3: Build attempts from candidates</span>
+  <span class="kw">for</span> (<span class="kw">const</span> candidate <span class="kw">of</span> rules.candidates) {
+    <span class="kw">const</span> attempt = <span class="fn">buildAttemptForCandidate</span>(candidate);
+
+    <span class="cm">// Step 4: Validate (API keys, token limits)</span>
+    <span class="kw">if</span> (<span class="fn">validateAttempt</span>(attempt, config.env)) {
+      attempts.<span class="fn">push</span>(attempt);
+
+      <span class="cm">// Step 5: Add OpenRouter fallback for native providers</span>
+      <span class="kw">if</span> (attempt.transport === <span class="str">'native'</span>) {
+        <span class="kw">const</span> openRouterAttempt = <span class="fn">buildOpenRouterFallback</span>(attempt);
+        <span class="kw">if</span> (openRouterAttempt) attempts.<span class="fn">push</span>(openRouterAttempt);
+      }
+    }
+  }
+
+  <span class="kw">return</span> attempts;
+}</code></pre>
+
+      <div class="callout cyan">
+        <p><strong>Automatic fallback behavior:</strong> The system attempts each model in sequence until one succeeds. If streaming times out or fails, it automatically falls back to non-streaming mode before trying the next provider in the list.</p>
+      </div>
+    </section>
+
+    <section class="section" id="caching">
+      <div class="section-header">
+        <span class="section-num">// 06</span>
+        <h2>Caching System</h2>
+      </div>
+      <p>The caching system uses a two-tier architecture with SQLite for structured data and a file-based cache for media downloads. Both caches support size limits, TTL expiration, and automatic eviction.</p>
+
+      <div class="industry-grid">
+        <div class="industry-card">
+          <div class="industry-header">
+            <div class="industry-icon" style="background:rgba(124,58,237,0.15)">🗄️</div>
+            <div>
+              <h3>SQLite Cache</h3>
+              <small>Structured Data</small>
+            </div>
+          </div>
+          <div class="industry-body">
+            <p>Stores transcripts, extracted content, and summaries in a single SQLite database at <code>~/.summarize/cache.sqlite</code>.</p>
+            <ul class="use-cases">
+              <li>Website extraction results (Readability/Firecrawl)</li>
+              <li>YouTube transcripts (all modes)</li>
+              <li>LLM-generated summaries with metadata</li>
+              <li>Slide extraction data</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="industry-card">
+          <div class="industry-header">
+            <div class="industry-icon" style="background:rgba(6,182,212,0.15)">📁</div>
+            <div>
+              <h3>Media Cache</h3>
+              <small>File Storage</small>
+            </div>
+          </div>
+          <div class="industry-body">
+            <p>Stores downloaded audio/video files from yt-dlp in <code>~/.summarize/cache/media/</code>.</p>
+            <ul class="use-cases">
+              <li>YouTube audio downloads for transcription</li>
+              <li>Podcast audio files</li>
+              <li>Video files for slide extraction</li>
+              <li>Temporary processing files</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <h4>Cache Key Generation</h4>
+      <p>All cache keys use SHA256 hashes with format versioning to ensure invalidation on code changes:</p>
+
+      <pre><code><span class="code-label">TypeScript · Cache Key Generation</span><span class="kw">import</span> { <span class="cls">createHash</span> } <span class="kw">from</span> <span class="str">'crypto'</span>;
+
+<span class="kw">const</span> <span class="cls">CACHE_FORMAT_VERSION</span> = <span class="str">'v1'</span>;
+
+<span class="cm">// Transcript cache key: URL + namespace + file modification time</span>
+<span class="kw">function</span> <span class="fn">buildTranscriptCacheKey</span>(
+  url: <span class="cls">string</span>,
+  namespace?: <span class="cls">string</span>,
+  fileMtime?: <span class="cls">number</span>
+): <span class="cls">string</span> {
+  <span class="kw">const</span> data = <span class="cls">JSON</span>.<span class="fn">stringify</span>({ <span class="cls">CACHE_FORMAT_VERSION</span>, url, namespace, fileMtime });
+  <span class="kw">return</span> <span class="fn">createHash</span>(<span class="str">'sha256'</span>).<span class="fn">update</span>(data).<span class="fn">digest</span>(<span class="str">'hex'</span>);
+}
+
+<span class="cm">// Summary cache key: content hash + prompt hash + model + length + language</span>
+<span class="kw">function</span> <span class="fn">buildSummaryCacheKey</span>(
+  contentHash: <span class="cls">string</span>,
+  promptHash: <span class="cls">string</span>,
+  model: <span class="cls">string</span>,
+  lengthKey: <span class="cls">string</span>,
+  languageKey: <span class="cls">string</span>
+): <span class="cls">string</span> {
+  <span class="kw">const</span> data = <span class="cls">JSON</span>.<span class="fn">stringify</span>({
+    <span class="cls">CACHE_FORMAT_VERSION</span>,
+    contentHash,
+    promptHash,
+    model,
+    lengthKey,
+    languageKey
+  });
+  <span class="kw">return</span> <span class="fn">createHash</span>(<span class="str">'sha256'</span>).<span class="fn">update</span>(data).<span class="fn">digest</span>(<span class="str">'hex'</span>);
+}</code></pre>
+
+      <div class="table-wrap">
+        <table>
+          <tr><th>Setting</th><th>SQLite Cache</th><th>Media Cache</th></tr>
+          <tr>
+            <td><strong>Default Path</strong></td>
+            <td><code>~/.summarize/cache.sqlite</code></td>
+            <td><code>~/.summarize/cache/media/</code></td>
+          </tr>
+          <tr>
+            <td><strong>Max Size</strong></td>
+            <td><span class="tag tag-blue">512 MB</span></td>
+            <td><span class="tag tag-blue">2048 MB</span></td>
+          </tr>
+          <tr>
+            <td><strong>TTL</strong></td>
+            <td><span class="tag tag-purple">30 days</span></td>
+            <td><span class="tag tag-purple">7 days</span></td>
+          </tr>
+          <tr>
+            <td><strong>Eviction</strong></td>
+            <td>Last-accessed (LRU)</td>
+            <td>TTL + size cap</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="callout amber">
+        <p><strong>Cache bypass options:</strong> Use <span class="hl-amber">--no-cache</span> to bypass summary cache (extract/transcript caches still apply) or <span class="hl-amber">--no-media-cache</span> to skip media file caching entirely for debugging or testing.</p>
+      </div>
+    </section>
+
+    <section class="section" id="config">
+      <div class="section-header">
+        <span class="section-num">// 07</span>
+        <h2>Configuration System</h2>
+      </div>
+      <p>The configuration system uses JSON5 format (lenient JSON) stored at <code>~/.summarize/config.json</code>. Settings support model selection rules, API keys, cache configuration, and provider-specific options.</p>
+
+      <pre><code><span class="code-label">JSON5 · Complete Configuration Example</span>{
+  <span class="cm">// Model Settings - can be string or object with auto-rules</span>
+  <span class="str">"model"</span>: {
+    <span class="str">"mode"</span>: <span class="str">"auto"</span>,
+    <span class="str">"rules"</span>: [
+      {
+        <span class="str">"when"</span>: [<span class="str">"video"</span>],
+        <span class="str">"candidates"</span>: [<span class="str">"google/gemini-2-flash"</span>]
+      },
+      {
+        <span class="str">"when"</span>: [<span class="str">"website"</span>, <span class="str">"youtube"</span>],
+        <span class="str">"bands"</span>: [
+          { <span class="str">"token"</span>: { <span class="str">"max"</span>: <span class="num">8000</span> }, <span class="str">"candidates"</span>: [<span class="str">"openai/gpt-4o-mini"</span>] },
+          { <span class="str">"candidates"</span>: [<span class="str">"anthropic/claude-3-haiku"</span>] }
+        ]
+      }
+    ]
+  },
+
+  <span class="cm">// Custom model presets</span>
+  <span class="str">"models"</span>: {
+    <span class="str">"fast"</span>: { <span class="str">"id"</span>: <span class="str">"openai/gpt-4o-mini"</span> },
+    <span class="str">"smart"</span>: { <span class="str">"id"</span>: <span class="str">"anthropic/claude-sonnet-4"</span> },
+    <span class="str">"free-tier"</span>: {
+      <span class="str">"rules"</span>: [{
+        <span class="str">"candidates"</span>: [
+          <span class="str">"openrouter/google/gemma-2-9b:free"</span>,
+          <span class="str">"openrouter/meta-llama/llama-3-8b:free"</span>
+        ]
+      }]
+    }
+  },
+
+  <span class="cm">// API Keys - legacy format (shorter names)</span>
+  <span class="str">"apiKeys"</span>: {
+    <span class="str">"openai"</span>: <span class="str">"sk-proj-..."</span>,
+    <span class="str">"anthropic"</span>: <span class="str">"sk-ant-..."</span>,
+    <span class="str">"google"</span>: <span class="str">"AIza..."</span>,
+    <span class="str">"openrouter"</span>: <span class="str">"sk-or-..."</span>,
+    <span class="str">"groq"</span>: <span class="str">"gsk_..."</span>,
+    <span class="str">"firecrawl"</span>: <span class="str">"fc-..."</span>,
+    <span class="str">"apify"</span>: <span class="str">"apify_..."</span>
+  },
+
+  <span class="cm">// Cache settings</span>
+  <span class="str">"cache"</span>: {
+    <span class="str">"enabled"</span>: <span class="kw">true</span>,
+    <span class="str">"maxMb"</span>: <span class="num">512</span>,
+    <span class="str">"ttlDays"</span>: <span class="num">30</span>,
+    <span class="str">"media"</span>: {
+      <span class="str">"enabled"</span>: <span class="kw">true</span>,
+      <span class="str">"maxMb"</span>: <span class="num">2048</span>,
+      <span class="str">"ttlDays"</span>: <span class="num">7</span>
+    }
+  },
+
+  <span class="cm">// Output and prompt settings</span>
+  <span class="str">"output"</span>: { <span class="str">"language"</span>: <span class="str">"auto"</span> },
+  <span class="str">"prompt"</span>: <span class="str">"Explain this in simple terms. Avoid jargon."</span>,
+
+  <span class="cm">// CLI model settings</span>
+  <span class="str">"cli"</span>: {
+    <span class="str">"enabled"</span>: [<span class="str">"gemini"</span>, <span class="str">"claude"</span>],
+    <span class="str">"autoFallback"</span>: {
+      <span class="str">"enabled"</span>: <span class="kw">true</span>,
+      <span class="str">"onlyWhenNoApiKeys"</span>: <span class="kw">true</span>,
+      <span class="str">"order"</span>: [<span class="str">"claude"</span>, <span class="str">"gemini"</span>, <span class="str">"codex"</span>]
+    }
+  }
+}</code></pre>
+
+      <h4>API Key Priority</h4>
+      <p>API keys are resolved in the following priority order:</p>
+
+      <div class="card-grid">
+        <div class="card green">
+          <span class="card-icon">1️⃣</span>
+          <h3>Environment Variables</h3>
+          <p>Highest priority. Set via shell environment (e.g., <code>export OPENAI_API_KEY=...</code>).</p>
+        </div>
+        <div class="card amber">
+          <span class="card-icon">2️⃣</span>
+          <h3>config.json env</h3>
+          <p>Medium priority. Use <code>"env": { "OPENAI_API_KEY": "..." }</code> format.</p>
+        </div>
+        <div class="card red">
+          <span class="card-icon">3️⃣</span>
+          <h3>config.json apiKeys</h3>
+          <p>Lowest priority. Use <code>"apiKeys": { "openai": "..." }</code> format.</p>
+        </div>
+      </div>
+
+      <div class="callout purple">
+        <p><strong>Model preset advantage:</strong> Define custom presets in the <code>models</code> section for complex scenarios like free-tier fallbacks or content-type-specific routing. Use with <span class="hl-purple">--model &lt;preset&gt;</span> to invoke sophisticated model selection logic without repetition.</p>
+      </div>
+    </section>
+
+    <section class="section" id="daemon">
+      <div class="section-header">
+        <span class="section-num">// 08</span>
+        <h2>Daemon Server Architecture</h2>
+      </div>
+      <p>The daemon server bridges the browser extension to CLI capabilities, running as an HTTP server on <code>127.0.0.1:8787</code>. It handles heavy processing tasks that can't be performed in the browser environment.</p>
+
+      <h4>Purpose and Benefits</h4>
+      <p>The daemon enables the Chrome extension to access local tools and APIs that browsers cannot directly reach:</p>
+
+      <div class="card-grid">
+        <div class="card cyan">
+          <span class="card-icon">🔧</span>
+          <h3>Local Tool Access</h3>
+          <p>Executes yt-dlp, ffmpeg, whisper.cpp, and tesseract for media processing and OCR.</p>
+        </div>
+        <div class="card purple">
+          <span class="card-icon">🔑</span>
+          <h3>API Key Security</h3>
+          <p>Keeps API keys on the local machine rather than exposing them through browser extensions.</p>
+        </div>
+        <div class="card green">
+          <span class="card-icon">⚡</span>
+          <h3>Heavy Processing</h3>
+          <p>Offloads CPU-intensive tasks like transcription and content extraction from the browser.</p>
+        </div>
+        <div class="card amber">
+          <span class="card-icon">🔄</span>
+          <h3>SSE Streaming</h3>
+          <p>Provides real-time progress updates via Server-Sent Events to the extension UI.</p>
+        </div>
+        <div class="card red">
+          <span class="card-icon">💾</span>
+          <h3>Shared Cache</h3>
+          <p>Extension uses the same SQLite cache as the CLI, avoiding redundant work.</p>
+        </div>
+        <div class="card pink">
+          <span class="card-icon">🏃</span>
+          <h3>Background Service</h3>
+          <p>Runs as a system service (LaunchAgent, systemd, or Scheduled Task) for persistence.</p>
+        </div>
+      </div>
+
+      <h4>HTTP Endpoints</h4>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Endpoint</th><th>Method</th><th>Purpose</th><th>Auth</th></tr>
+          <tr>
+            <td><code>/health</code></td>
+            <td>GET</td>
+            <td>Health check with PID and version</td>
+            <td><span class="tag tag-green">No</span></td>
+          </tr>
+          <tr>
+            <td><code>/v1/ping</code></td>
+            <td>GET</td>
+            <td>Authenticated ping</td>
+            <td><span class="tag tag-red">Yes</span></td>
+          </tr>
+          <tr>
+            <td><code>/v1/summarize</code></td>
+            <td>POST</td>
+            <td>Initiate summarization session</td>
+            <td><span class="tag tag-red">Yes</span></td>
+          </tr>
+          <tr>
+            <td><code>/v1/summarize/&lt;id&gt;/events</code></td>
+            <td>GET</td>
+            <td>SSE stream for results</td>
+            <td><span class="tag tag-red">Yes</span></td>
+          </tr>
+          <tr>
+            <td><code>/v1/agent</code></td>
+            <td>POST</td>
+            <td>Automation agent endpoint</td>
+            <td><span class="tag tag-red">Yes</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <pre><code><span class="code-label">TypeScript · Daemon Server Setup</span><span class="kw">import</span> { <span class="cls">createServer</span> } <span class="kw">from</span> <span class="str">'http'</span>;
+
+<span class="kw">const</span> <span class="cls">DAEMON_PORT</span> = <span class="num">8787</span>;
+
+<span class="kw">async function</span> <span class="fn">runDaemonServer</span>(config: <span class="cls">DaemonConfig</span>) {
+  <span class="kw">const</span> server = <span class="cls">createServer</span>(<span class="kw">async</span> (req, res) => {
+    <span class="kw">const</span> url = <span class="kw">new</span> <span class="cls">URL</span>(req.url, <span class="str">`http://localhost:${<span class="cls">DAEMON_PORT</span>}`</span>);
+
+    <span class="kw">switch</span> (url.pathname) {
+      <span class="kw">case</span> <span class="str">'/health'</span>:
+        <span class="fn">handleHealth</span>(req, res);
+        <span class="kw">break</span>;
+
+      <span class="kw">case</span> <span class="str">'/v1/summarize'</span>:
+        <span class="kw">if</span> (!<span class="fn">verifyAuthToken</span>(req)) {
+          res.statusCode = <span class="num">401</span>;
+          res.<span class="fn">end</span>(<span class="cls">JSON</span>.<span class="fn">stringify</span>({ error: <span class="str">'Unauthorized'</span> }));
+          <span class="kw">return</span>;
+        }
+        <span class="kw">await</span> <span class="fn">handleSummarizeRequest</span>(req, res);
+        <span class="kw">break</span>;
+
+      <span class="kw">default</span>:
+        res.statusCode = <span class="num">404</span>;
+        res.<span class="fn">end</span>(<span class="str">'Not Found'</span>);
+    }
+  });
+
+  server.<span class="fn">listen</span>(<span class="cls">DAEMON_PORT</span>, <span class="str">'127.0.0.1'</span>);
+  <span class="cls">console</span>.<span class="fn">log</span>(<span class="str">`Daemon running on http://127.0.0.1:${<span class="cls">DAEMON_PORT</span>}`</span>);
+}</code></pre>
+
+      <div class="callout green">
+        <p><strong>Authentication mechanism:</strong> The daemon uses a bearer token generated during installation, stored in <code>~/.summarize/config.json</code> for the daemon and <code>chrome.storage.local</code> for the extension. This token is required for all <code>/v1/</code> endpoints.</p>
+      </div>
+    </section>
+
+    <section class="section" id="best-practices">
+      <div class="section-header">
+        <span class="section-num">// 09</span>
+        <h2>Best Practices</h2>
+      </div>
+      <p>When building your own summarization tool based on these patterns, consider these proven practices from the summarize CLI implementation.</p>
+
+      <div class="card-grid">
+        <div class="card purple">
+          <span class="card-icon">🎯</span>
+          <h3>Use Gateway-Style Model IDs</h3>
+          <p>Format models as <code>&lt;provider&gt;/&lt;model&gt;</code> to enable transparent routing between providers. This abstraction makes adding new providers trivial without changing user-facing code.</p>
+        </div>
+        <div class="card cyan">
+          <span class="card-icon">🔄</span>
+          <h3>Implement Automatic Fallback</h3>
+          <p>Never rely on a single extraction method or API. Always have fallback chains with clear error boundaries. The summarize CLI tries 4+ methods for YouTube transcripts alone.</p>
+        </div>
+        <div class="card amber">
+          <span class="card-icon">💾</span>
+          <h3>Cache Aggressively</h3>
+          <p>Cache everything that's expensive: API calls, network requests, media downloads. Use SHA256-based keys with format versions to ensure cache invalidation works correctly.</p>
+        </div>
+        <div class="card green">
+          <span class="card-icon">📋</span>
+          <h3>Separate Config from Code</h3>
+          <p>Use a declarative configuration file (JSON5/YAML) for model selection rules, provider settings, and behavior. This lets users customize without code changes.</p>
+        </div>
+        <div class="card red">
+          <span class="card-icon">🌐</span>
+          <h3>Support Multiple Content Types</h3>
+          <p>Don't limit to just URLs. Support files, stdin, and specialized inputs like YouTube URLs. Auto-detect input type to reduce user friction.</p>
+        </div>
+        <div class="card pink">
+          <span class="card-icon">🎨</span>
+          <h3>Enable Streaming by Default</h3>
+          <p>Users expect real-time feedback. Stream LLM responses and progress updates. Fall back to non-streaming only on errors or timeouts.</p>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="callout">
+          <p><strong>Extraction strategy:</strong> Start with free, fast methods (Mozilla Readability, web scraping) and fall back to paid APIs (Firecrawl, Apify) only when necessary. This keeps costs low while maintaining reliability.</p>
+        </div>
+
+        <div class="callout cyan">
+          <p><strong>Error handling approach:</strong> Implement attempt-level retry with exponential backoff for transient failures, then cross-attempt fallback before surfacing errors to the user. This handles most temporary issues automatically.</p>
+        </div>
+      </div>
+
+      <h4>Key Dependencies to Consider</h4>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Category</th><th>Library</th><th>Purpose</th><th>Required</th></tr>
+          <tr>
+            <td><strong>CLI Framework</strong></td>
+            <td>Commander.js</td>
+            <td>Argument parsing and help generation</td>
+            <td><span class="tag tag-green">Yes</span></td>
+          </tr>
+          <tr>
+            <td><strong>DOM Parsing</strong></td>
+            <td>jsdom</td>
+            <td>Virtual DOM for Node.js HTML parsing</td>
+            <td><span class="tag tag-green">Yes</span></td>
+          </tr>
+          <tr>
+            <td><strong>Content Extraction</strong></td>
+            <td>@mozilla/readability</td>
+            <td>Article content extraction</td>
+            <td><span class="tag tag-green">Yes</span></td>
+          </tr>
+          <tr>
+            <td><strong>Database</strong></td>
+            <td>better-sqlite3</td>
+            <td>Synchronous SQLite for caching</td>
+            <td><span class="tag tag-green">Yes</span></td>
+          </tr>
+          <tr>
+            <td><strong>Media Download</strong></td>
+            <td>yt-dlp (binary)</td>
+            <td>YouTube/audio download</td>
+            <td><span class="tag tag-amber">Optional</span></td>
+          </tr>
+          <tr>
+            <td><strong>Transcription</strong></td>
+            <td>whisper.cpp</td>
+            <td>Local speech-to-text</td>
+            <td><span class="tag tag-amber">Optional</span></td>
+          </tr>
+          <tr>
+            <td><strong>Markdown</strong></td>
+            <td>markitdown</td>
+            <td>Document preprocessing</td>
+            <td><span class="tag tag-amber">Optional</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="callout amber">
+        <p><strong>Final recommendation:</strong> Start with a minimal implementation supporting one provider and one content type. Add fallback chains, additional providers, and specialized extraction methods incrementally based on real user needs. The summarize CLI's complexity evolved over time—yours should too.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Summarize CLI Technical Architecture Guide · Built with Claude · March 2026</p>
+    <p style="margin-top:0.5rem;color:#1a1a26">CLI summarization tool architecture Node.js TypeScript LLM gateway caching daemon Mozilla Readability YouTube transcripts yt-dlp OpenAI Anthropic Google Gemini xAI OpenRouter Firecrawl Apify Commander.js jsdom better-sqlite3 content extraction pipelines automatic fallback streaming SSE</p>
+  </footer>
+</body>
+</html>
